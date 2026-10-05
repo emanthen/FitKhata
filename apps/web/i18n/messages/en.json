@@ -1,0 +1,41 @@
+{
+  "common": {
+    "appName": "FitKhata",
+    "loading": "Loading...",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode"
+  },
+  "marketing": {
+    "heroTitle": "Run your gym, the simple way",
+    "heroSubtitle": "Membership, attendance and billing for Nepali gyms."
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "gate": {
+    "title": "Check-in",
+    "pairTitle": "Pair this kiosk",
+    "pairCode": "6-digit pairing code",
+    "pairDeviceName": "Kiosk name",
+    "pairSubmit": "Pair kiosk",
+    "pairError": "Couldn't pair — check the code and try again.",
+    "scanPrompt": "Scan a QR pass or tap a card",
+    "statusOnline": "Online",
+    "statusOffline": "Offline ({count})",
+    "statusSyncError": "Sync error",
+    "resultGreen": "OK — let in",
+    "resultAmber": "Expiring soon — let in",
+    "resultRed": "Not allowed",
+    "reasonUnknownMember": "Not recognised",
+    "reasonUnknownCard": "Card not recognised",
+    "reasonInvalidCode": "Code expired — ask them to refresh their pass"
+  },
+  "member": {
+    "title": "My Membership",
+    "passTitle": "Your gate pass",
+    "passSubtitle": "Show this to the front desk or scan it at the gate.",
+    "passLoading": "Loading your pass...",
+    "passError": "This pass link isn't valid. Ask the front desk for a new one."
+  }
+}

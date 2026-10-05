@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated API client (`make schema`)
+packages/api-client/openapi.json
+packages/api-client/src/generated.ts
+
+# Generated service worker (Serwist build output, from app/sw.ts)
+apps/web/public/sw.js
+
+# Build artifacts
+staticfiles/
+media/
+coverage/
+htmlcov/
+playwright-report/
+test-results/
+
+# IDE
+.vscode/
+.idea/
