@@ -1,0 +1,95 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  PNPM_VERSION: "10.33.0"
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fitkhata_app
+          POSTGRES_PASSWORD: fitkhata_app
+          POSTGRES_DB: fitkhata
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fitkhata_app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DATABASE_URL: postgres://fitkhata_app:fitkhata_app@localhost:5432/fitkhata
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          working-directory: apps/api
+      - run: uv python install 3.12
+        working-directory: apps/api
+      - run: uv sync
+        working-directory: apps/api
+      - run: uv run ruff check .
+        working-directory: apps/api
+      - run: uv run mypy .
+        working-directory: apps/api
+      - run: uv run pytest
+        working-directory: apps/api
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web lint
+      - run: pnpm --filter web typecheck
+      - run: pnpm --filter web test
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter web e2e
+
+  build-and-push:
+    needs: [api, web]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: apps/${{ matrix.app }}
+          target: runtime
+          push: true
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.app }}:${{ github.sha }},ghcr.io/${{ github.repository }}/${{ matrix.app }}:latest

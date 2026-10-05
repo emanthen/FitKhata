@@ -1,0 +1,102 @@
+[
+  {
+    "secret_hex": "652f81586b23244951cb2ccbbe01f6e6f382db6a03f0c1303fa2909ffe708592",
+    "unix_time": 1727958886,
+    "expected_token": "TQUWSFTBVV"
+  },
+  {
+    "secret_hex": "2d3985139f76bcfd1ad10337eed5d527a57450a667ce6a8399a8e7ac5341037c",
+    "unix_time": 1749169676,
+    "expected_token": "4ZCEUKHRXI"
+  },
+  {
+    "secret_hex": "99e30f498c3c14b8d61ce7309182a09caa690024756e5c8632b963aedbf38dce",
+    "unix_time": 1700682441,
+    "expected_token": "2RPE45QFLQ"
+  },
+  {
+    "secret_hex": "0079994ea7665745f66f7e82faa4e51cb0576e9389cea13ec0fb01302c92eeb2",
+    "unix_time": 1720041381,
+    "expected_token": "6U6AJIJR53"
+  },
+  {
+    "secret_hex": "468a79a8056ae19290c4a5c1be607e85fbffa85bc5dd995853c30694521a1ddd",
+    "unix_time": 1724723689,
+    "expected_token": "NDUYJ4IWSF"
+  },
+  {
+    "secret_hex": "14194a0f47e75a40e7dec8b188b4548748cbd6f4b010b91597d794454424d471",
+    "unix_time": 1712996393,
+    "expected_token": "W2TQPRQ3JU"
+  },
+  {
+    "secret_hex": "3006906998ba84a52c7e1bde4030539d3b4f6ead7fbe02cca85a80fb670ecf99",
+    "unix_time": 1718135824,
+    "expected_token": "MNFRYICOUP"
+  },
+  {
+    "secret_hex": "0018de506e1c284e9b8ee4b8658ac0984c29b4104f62d2d5713030795e222825",
+    "unix_time": 1737984165,
+    "expected_token": "T6QH5Q73KU"
+  },
+  {
+    "secret_hex": "813dc55cb1f5f35d2df6243f4d39a3519ce87c7b4bd6b39fb5f27b1e3a7ab31f",
+    "unix_time": 1729274793,
+    "expected_token": "CJUWG3T36Z"
+  },
+  {
+    "secret_hex": "29ad93b327f4cbe2157c9c48612873b018edd2bc3f3aceae20be6a64481b2c54",
+    "unix_time": 1710850686,
+    "expected_token": "AG2XM46NU3"
+  },
+  {
+    "secret_hex": "309df030261eaa4af3823eed78f4d964f8075d7574e6fb69ee8e21f4c335211b",
+    "unix_time": 1725035890,
+    "expected_token": "2POONR5PDT"
+  },
+  {
+    "secret_hex": "01b37607e7f6d0bca92610244c3890b1b54645885ad7dea546fb1f67a6d84aa1",
+    "unix_time": 1708339409,
+    "expected_token": "3MRLJ5NHZA"
+  },
+  {
+    "secret_hex": "b3f1c1b9792960ac16a402a12f103253c720f9d684dd74ccf79bbfef7e683239",
+    "unix_time": 1729053861,
+    "expected_token": "TVLKBF4YC6"
+  },
+  {
+    "secret_hex": "77949bfd75f2e052a6dff521e446c4d90e9c77d0ed1084270d73084706f7267c",
+    "unix_time": 1717521453,
+    "expected_token": "P3C5UD37KJ"
+  },
+  {
+    "secret_hex": "f31b9894c861d84dd268c3f4b511a948d5ad3f491ae4763acdb95d0ce9855986",
+    "unix_time": 1737720448,
+    "expected_token": "2CSYMENN6Y"
+  },
+  {
+    "secret_hex": "cc731b4ee12e3e8ca47b00b0b11ad27c6a73f1df5e15ee6e63c3b1ce870f2f09",
+    "unix_time": 1742091668,
+    "expected_token": "72I7CWVTX6"
+  },
+  {
+    "secret_hex": "aec59283c9bec2c1a9fd866f54931907188e357062345e493de86f068a9c200b",
+    "unix_time": 1711699998,
+    "expected_token": "RFQ5XS3R4L"
+  },
+  {
+    "secret_hex": "54c91563ac9c73e013abebb1287c2d05cfff845778d35f1048dffa49bedb2fa3",
+    "unix_time": 1741055144,
+    "expected_token": "2JCTKGB275"
+  },
+  {
+    "secret_hex": "375afbcf163d04fe52ce92a946a8b7659426e9a167a3311425b28943f6cd61ba",
+    "unix_time": 1737126038,
+    "expected_token": "VF6NWB762N"
+  },
+  {
+    "secret_hex": "056f5804d70439f67d38ef578e4629013a14256013d9e5884fb7c050e9f374bc",
+    "unix_time": 1712536542,
+    "expected_token": "2S7SM3SFKX"
+  }
+]

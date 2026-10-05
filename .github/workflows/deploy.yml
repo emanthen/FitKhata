@@ -1,0 +1,113 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+jobs:
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      IMAGE_TAG: main-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync infra/ to staging
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete
+          path: infra/
+          remote_path: ${{ secrets.DEPLOY_PATH }}/infra/
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_port: ${{ secrets.SSH_PORT }}
+          remote_user: ${{ secrets.SSH_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Pull, migrate, deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          envs: IMAGE_TAG
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_PATH }}/infra"
+            set -a; source .env; set +a
+            export IMAGE_TAG
+            docker compose pull web api
+            docker compose build postgres backup
+            docker compose run --rm \
+              -e DATABASE_URL="postgres://fitkhata_system:${FITKHATA_SYSTEM_PASSWORD}@postgres:5432/fitkhata" \
+              api python manage.py migrate --noinput
+            docker compose up -d --remove-orphans
+
+      - name: Smoke test /readyz
+        run: |
+          for i in $(seq 1 10); do
+            if curl -fsS "https://${{ secrets.DOMAIN_API }}/readyz"; then
+              echo "readyz OK"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "readyz never became healthy" >&2
+          exit 1
+
+  deploy-production:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      IMAGE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync infra/ to production
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete
+          path: infra/
+          remote_path: ${{ secrets.DEPLOY_PATH }}/infra/
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_port: ${{ secrets.SSH_PORT }}
+          remote_user: ${{ secrets.SSH_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Pull, migrate, deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          envs: IMAGE_TAG
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_PATH }}/infra"
+            set -a; source .env; set +a
+            export IMAGE_TAG
+            docker compose pull web api
+            docker compose build postgres backup
+            docker compose run --rm \
+              -e DATABASE_URL="postgres://fitkhata_system:${FITKHATA_SYSTEM_PASSWORD}@postgres:5432/fitkhata" \
+              api python manage.py migrate --noinput
+            docker compose up -d --remove-orphans
+
+      - name: Smoke test /readyz
+        run: |
+          for i in $(seq 1 10); do
+            if curl -fsS "https://${{ secrets.DOMAIN_API }}/readyz"; then
+              echo "readyz OK"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "readyz never became healthy" >&2
+          exit 1

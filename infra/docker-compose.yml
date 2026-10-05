@@ -1,0 +1,305 @@
+name: fitkhata
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+x-api-image: &api-image ${API_IMAGE:-ghcr.io/fitkhata/api}:${IMAGE_TAG:-latest}
+
+x-django-env: &django-env
+  DJANGO_SETTINGS_MODULE: config.settings.prod
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+  DJANGO_ALLOWED_HOSTS: ${DOMAIN_API}
+  DATABASE_URL: postgres://fitkhata_app:${FITKHATA_APP_PASSWORD}@postgres:5432/fitkhata
+  REDIS_URL: redis://redis:6379/0
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY}
+  LOG_LEVEL: INFO
+  AWS_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+  AWS_S3_ENDPOINT_URL: ${R2_ENDPOINT}
+  AWS_STORAGE_BUCKET_NAME: ${R2_STORAGE_BUCKET}
+
+networks:
+  internal:
+
+volumes:
+  pgdata:
+  pg_wal_archive_status:
+  redisdata:
+  caddy_data:
+  caddy_config:
+  uptime_kuma_data:
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks: [internal]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN_APP: ${DOMAIN_APP}
+      DOMAIN_API: ${DOMAIN_API}
+      DOMAIN_STATUS: ${DOMAIN_STATUS:-}
+      CADDY_EMAIL: ${CADDY_EMAIL}
+      STATUS_BASIC_AUTH: ${STATUS_BASIC_AUTH:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      channels:
+        condition: service_healthy
+    healthcheck:
+      # Hits Caddy's own admin API (localhost:2019, enabled by default) —
+      # reflects whether the server process is actually up and serving,
+      # unlike `caddy validate` which only re-checks the config file.
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:2019/config/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/fitkhata/web}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks: [internal]
+    environment:
+      NEXT_PUBLIC_API_URL: https://${DOMAIN_API}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  api:
+    image: *api-image
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    networks: [internal]
+    environment: *django-env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/readyz').status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  channels:
+    image: *api-image
+    command: ["daphne", "-b", "0.0.0.0", "-p", "8001", "config.asgi:application"]
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks: [internal]
+    environment: *django-env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/healthz').status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: *api-image
+    command: ["celery", "-A", "config", "worker", "-l", "info"]
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    networks: [internal]
+    environment: *django-env
+    healthcheck:
+      test: ["CMD", "celery", "-A", "config", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    image: *api-image
+    command: ["celery", "-A", "config", "beat", "-l", "info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks: [internal]
+    environment: *django-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    build: ./postgres
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 2560M
+    networks: [internal]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: fitkhata
+      FITKHATA_APP_PASSWORD: ${FITKHATA_APP_PASSWORD}
+      FITKHATA_SYSTEM_PASSWORD: ${FITKHATA_SYSTEM_PASSWORD}
+      AWS_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      AWS_ENDPOINT: ${R2_ENDPOINT}
+      AWS_S3_FORCE_PATH_STYLE: "true"
+      WALG_S3_PREFIX: ${WALG_S3_PREFIX}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - pg_wal_archive_status:/var/lib/postgresql/data/pg_wal/archive_status
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d fitkhata"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks: [internal]
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "384mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # No local object-store service: MinIO's open-source edition was archived
+  # upstream in 2026 (no new images, no mc releases). The app writes files
+  # straight to Cloudflare R2 via django-storages — see x-django-env's R2_*
+  # vars and apps/api/config/settings/base.py.
+
+  backup:
+    build: ./backup
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks: [internal]
+    environment:
+      PGHOST: postgres
+      PGDATABASE: fitkhata
+      PGUSER: fitkhata_system
+      PGPASSWORD: ${FITKHATA_SYSTEM_PASSWORD}
+      PGDATA: /var/lib/postgresql/data
+      AWS_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      AWS_ENDPOINT: ${R2_ENDPOINT}
+      AWS_S3_FORCE_PATH_STYLE: "true"
+      WALG_S3_PREFIX: ${WALG_S3_PREFIX}
+      BACKUP_HOUR_UTC: ${BACKUP_HOUR_UTC:-2}
+    volumes:
+      - pgdata:/var/lib/postgresql/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks: [internal]
+    volumes:
+      - uptime_kuma_data:/app/data
+
+  # Optional: `docker compose --profile monitoring up -d`
+  node_exporter:
+    image: prom/node-exporter:latest
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks: [internal]
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks: [internal]
+    environment:
+      DATA_SOURCE_NAME: postgresql://fitkhata_system:${FITKHATA_SYSTEM_PASSWORD}@postgres:5432/fitkhata?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy

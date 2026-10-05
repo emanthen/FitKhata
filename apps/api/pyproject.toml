@@ -1,0 +1,77 @@
+[project]
+name = "fitkhata-api"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "django>=5.1,<5.2",
+  "djangorestframework>=3.15",
+  "drf-spectacular>=0.27",
+  "djangorestframework-simplejwt>=5.3",
+  "celery>=5.4",
+  "django-celery-beat>=2.7",
+  "redis>=5.0",
+  "channels>=4.1",
+  "channels-redis>=4.2",
+  "daphne>=4.1",
+  "psycopg[binary]>=3.2",
+  "django-environ>=0.11",
+  "gunicorn>=23.0",
+  "uvicorn[standard]>=0.30",
+  "sentry-sdk>=2.14",
+  "python-json-logger>=2.0",
+  "cryptography>=43.0",
+  "tzdata>=2024.1",
+  "django-storages[s3]>=1.14",
+  "django-otp>=1.5",
+  "requests>=2.32",
+  "django-cors-headers>=4.4",
+  "pillow>=12.3.0",
+  "openpyxl>=3.1.5",
+  "hypothesis>=6.168.3",
+  "django-filter>=25.1",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-django>=4.9",
+  "pytest-cov>=5.0",
+  "factory-boy>=3.3",
+  "ruff>=0.8",
+  "mypy>=1.13",
+  "django-stubs[compatible-mypy]>=5.1",
+  "djangorestframework-stubs>=3.15",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["*/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+exclude = ["migrations/"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["core", "accounts", "gyms", "members", "attendance", "billing", "retention", "notifications", "coaching", "staff", "reports", "saas", "tests"]
+markers = [
+  "rls: Postgres row-level-security isolation tests (require a real DB)",
+  "benchmark: timing-sensitive tests against seeded/bulk data (slower, real DB)",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["config", "core", "accounts", "gyms", "members", "attendance", "billing", "retention", "notifications", "coaching", "staff", "reports", "saas"]

@@ -1,0 +1,2 @@
+row,phone,error
+3,+9779811000009,"duplicate key value violates unique constraint ""unique_gym_member_phone"""

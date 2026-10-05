@@ -1,0 +1,117 @@
+name: fitkhata-dev
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fitkhata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: fitkhata
+      MINIO_ROOT_PASSWORD: fitkhata123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  api:
+    build:
+      context: ../apps/api
+      target: dev
+    command: python manage.py runserver 0.0.0.0:8000
+    env_file: ../apps/api/.env.example
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DATABASE_URL: postgres://fitkhata_app:fitkhata_app@postgres:5432/fitkhata
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ../apps/api:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../apps/api
+      target: dev
+    command: celery -A config worker -l info
+    env_file: ../apps/api/.env.example
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DATABASE_URL: postgres://fitkhata_app:fitkhata_app@postgres:5432/fitkhata
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ../apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build:
+      context: ../apps/api
+      target: dev
+    command: celery -A config beat -l info
+    env_file: ../apps/api/.env.example
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DATABASE_URL: postgres://fitkhata_app:fitkhata_app@postgres:5432/fitkhata
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ../apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../apps/web
+      target: dev
+    command: pnpm dev
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    volumes:
+      - ../apps/web:/app
+      - web_node_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  miniodata:
+  web_node_modules:

@@ -1,0 +1,48 @@
+{
+	email {$CADDY_EMAIL}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://{$DOMAIN_API} wss://{$DOMAIN_API}; frame-ancestors 'none'; base-uri 'self'"
+		-Server
+		-X-Powered-By
+	}
+}
+
+(common) {
+	import security_headers
+	encode zstd gzip
+	request_body {
+		max_size 10MB
+	}
+}
+
+{$DOMAIN_APP} {
+	import common
+	reverse_proxy web:3000
+}
+
+{$DOMAIN_API} {
+	import common
+
+	@ws {
+		path /ws*
+	}
+	reverse_proxy @ws channels:8001
+
+	reverse_proxy api:8000
+}
+
+{$DOMAIN_STATUS} {
+	import common
+	basic_auth {
+		{$STATUS_BASIC_AUTH}
+	}
+	reverse_proxy uptime-kuma:3001
+}

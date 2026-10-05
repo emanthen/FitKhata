@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^apps/api/
+      - id: ruff-format
+        files: ^apps/api/
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run --project apps/api mypy apps/api
+        language: system
+        files: ^apps/api/.*\.py$
+        pass_filenames: false
+
+      - id: eslint
+        name: eslint
+        entry: pnpm --filter web lint
+        language: system
+        files: ^apps/web/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: prettier
+        name: prettier
+        entry: pnpm exec prettier --check
+        language: system
+        types_or: [ts, tsx, json, yaml, markdown]
+        exclude: ^apps/api/
