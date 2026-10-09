@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from datetime import date
+
 from django.contrib.postgres.search import TrigramSimilarity
+from django.core import signing
 from django.core.files.storage import default_storage
 from django.db.models import Q
 from django.db.models.functions import Greatest
@@ -13,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import IsFrontDeskOrAbove, IsManagerOrAbove
+from attendance.views import MEMBER_PASS_MAX_AGE, MEMBER_PASS_SALT
 from core.context import system_context
 from core.viewsets import TenantQuerysetMixin, TenantViewSet
 from gyms.models import Gym
@@ -20,6 +24,8 @@ from members.models import AddOn, ImportJob, Member, Membership, Plan, PromoCode
 from members.serializers import (
     AddOnSerializer,
     ImportJobSerializer,
+    MemberFeedbackCreateSerializer,
+    MemberFeedbackSerializer,
     MemberSerializer,
     MembershipSerializer,
     PlanSerializer,
@@ -28,7 +34,7 @@ from members.serializers import (
     TransferMemberSerializer,
     WaiverSerializer,
 )
-from members.services import register_member, sell_membership, transfer_member
+from members.services import register_member, sell_membership, submit_feedback, transfer_member
 from members.tasks import import_members_task
 
 SEARCH_RESULT_LIMIT = 50
@@ -199,6 +205,66 @@ class MembershipViewSet(TenantQuerysetMixin, viewsets.ReadOnlyModelViewSet):
         if member_id:
             qs = qs.filter(member_id=member_id)
         return qs
+
+
+class MemberMembershipStatusView(APIView):
+    """FR-8.3's home status card: current plan, expiry date (AD -- the
+    client converts to BS via lib/bs-calendar.ts, same as every other
+    BS-display spot in the Member PWA) and days left.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, token: str):
+        try:
+            data = signing.loads(token, salt=MEMBER_PASS_SALT, max_age=MEMBER_PASS_MAX_AGE)
+        except signing.SignatureExpired:
+            return Response({"detail": "This pass link has expired."}, status=400)
+        except signing.BadSignature:
+            return Response({"detail": "Invalid pass link."}, status=400)
+
+        with system_context():
+            member = get_object_or_404(Member, pk=data["member_id"])
+            membership = (
+                Membership.objects.filter(member=member).order_by("-expiry_date").first()
+            )
+            if membership is None:
+                return Response(None)
+            days_left = (membership.expiry_date - date.today()).days
+            return Response(
+                {
+                    "plan_name": membership.plan.name,
+                    "expiry_date": membership.expiry_date.isoformat(),
+                    "days_left": days_left,
+                    "status": membership.status,
+                }
+            )
+
+
+class MemberFeedbackCreateView(APIView):
+    """FR-8.6: the Member PWA's feedback/complaint form. Same pass-token
+    auth as the rest of the m/pass/<token>/... family.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, token: str):
+        try:
+            data = signing.loads(token, salt=MEMBER_PASS_SALT, max_age=MEMBER_PASS_MAX_AGE)
+        except signing.SignatureExpired:
+            return Response({"detail": "This pass link has expired."}, status=400)
+        except signing.BadSignature:
+            return Response({"detail": "Invalid pass link."}, status=400)
+
+        serializer = MemberFeedbackCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        with system_context():
+            member = get_object_or_404(Member, pk=data["member_id"])
+            feedback = submit_feedback(member, serializer.validated_data["message"])
+            return Response(
+                MemberFeedbackSerializer(feedback).data, status=status.HTTP_201_CREATED
+            )
 
 
 class ImportMembersView(APIView):

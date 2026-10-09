@@ -6,6 +6,9 @@ from attendance.views import (
     GatePairView,
     GateSnapshotView,
     ManualCheckinView,
+    MemberAttendanceCalendarView,
+    MemberLoginOtpSendView,
+    MemberLoginOtpVerifyView,
     MemberPassLinkView,
     MemberPassView,
 )
@@ -22,4 +25,17 @@ urlpatterns = [
         name="attendance-member-pass-links",
     ),
     path("m/pass/<str:token>", MemberPassView.as_view(), name="member-pass"),
+    path(
+        "m/login/otp/send", MemberLoginOtpSendView.as_view(), name="member-login-otp-send"
+    ),
+    path(
+        "m/login/otp/verify",
+        MemberLoginOtpVerifyView.as_view(),
+        name="member-login-otp-verify",
+    ),
+    path(
+        "m/pass/<str:token>/attendance",
+        MemberAttendanceCalendarView.as_view(),
+        name="member-attendance-calendar",
+    ),
 ]

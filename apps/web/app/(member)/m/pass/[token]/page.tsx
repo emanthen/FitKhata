@@ -26,6 +26,7 @@ export default function RedeemPassPage() {
           full_name: data.full_name,
           gym_code: data.gym_code,
           qr_secret_hex: data.qr_secret_hex,
+          token: params.token,
         });
         router.replace("/m");
       })

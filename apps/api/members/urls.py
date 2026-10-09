@@ -5,6 +5,8 @@ from members.views import (
     AddOnViewSet,
     ImportJobStatusView,
     ImportMembersView,
+    MemberFeedbackCreateView,
+    MemberMembershipStatusView,
     MembershipViewSet,
     MemberViewSet,
     PlanViewSet,
@@ -26,6 +28,16 @@ urlpatterns = [
         "members/import/<uuid:job_id>",
         ImportJobStatusView.as_view(),
         name="members-import-status",
+    ),
+    path(
+        "m/pass/<str:token>/membership-status",
+        MemberMembershipStatusView.as_view(),
+        name="member-membership-status",
+    ),
+    path(
+        "m/pass/<str:token>/feedback",
+        MemberFeedbackCreateView.as_view(),
+        name="member-feedback-create",
     ),
     *router.urls,
 ]

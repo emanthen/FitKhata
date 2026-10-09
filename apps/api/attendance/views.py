@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from django.core import signing
 from django.shortcuts import get_object_or_404
@@ -8,14 +8,20 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.otp import OtpLocked, OtpRateLimited, send_otp, verify_otp
 from accounts.permissions import IsFrontDeskOrAbove, IsGateDevice, IsManagerOrAbove
+from accounts.sms import get_sms_provider
 from attendance.crypto import derive_device_key, encrypt_for_device
+from attendance.domain.streak import compute_streaks
+from attendance.models import Attendance
 from attendance.pairing import generate_pairing_code, redeem_pairing_code
 from attendance.serializers import (
     GateCheckinsBatchSerializer,
     GatePairingCodeSerializer,
     GatePairRequestSerializer,
     ManualCheckinSerializer,
+    MemberLoginOtpSendSerializer,
+    MemberLoginOtpVerifySerializer,
 )
 from attendance.services import (
     RedCheckinRequiresReason,
@@ -190,5 +196,112 @@ class MemberPassView(APIView):
                     "full_name": member.full_name,
                     "gym_code": member.gym.code,
                     "qr_secret_hex": decrypt_bytes(bytes(member.qr_secret)).hex(),
+                }
+            )
+
+
+class MemberLoginOtpSendView(APIView):
+    """Member self-login, step 1. Shares accounts.otp's phone-keyed
+    primitives with staff login (OtpSendView) -- see the plan's accepted
+    judgment call on the resulting same-phone collision risk.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = MemberLoginOtpSendSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone = serializer.validated_data["phone"]
+
+        try:
+            code = send_otp(phone)
+        except OtpRateLimited as exc:
+            return Response(
+                {"detail": "Too many OTP requests.", "retry_after": exc.retry_after},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        get_sms_provider().send(phone, f"Your FitKhata code is {code}. Valid for 5 minutes.")
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MemberLoginOtpVerifyView(APIView):
+    """Member self-login, step 2. Requires gym_code (pre-filled from a
+    `?gym=` link on each gym's own poster/QR) rather than listing every gym
+    a phone matches -- a phone can legitimately belong to members at
+    unrelated gyms, and listing them would leak membership existence at one
+    gym to anyone who only proved they own that phone. On success, mints
+    and returns the exact same shape MemberPassView does, plus the token
+    itself, so the client's existing setCachedPass needs no changes.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = MemberLoginOtpVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            correct = verify_otp(data["phone"], data["code"])
+        except OtpLocked as exc:
+            return Response(
+                {"detail": "Too many wrong attempts.", "retry_after": exc.retry_after},
+                status=status.HTTP_423_LOCKED,
+            )
+        if not correct:
+            return Response({"detail": "Incorrect code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with system_context():
+            member = Member.objects.filter(
+                phone=data["phone"], gym__code=data["gym_code"]
+            ).first()
+            if member is None:
+                return Response(
+                    {"detail": "No member found with this phone at this gym."}, status=404
+                )
+            token = signing.dumps({"member_id": member.pk}, salt=MEMBER_PASS_SALT)
+            return Response(
+                {
+                    "token": token,
+                    "member_id": member.pk,
+                    "member_code": member.member_code,
+                    "full_name": member.full_name,
+                    "gym_code": member.gym.code,
+                    "qr_secret_hex": decrypt_bytes(bytes(member.qr_secret)).hex(),
+                }
+            )
+
+
+class MemberAttendanceCalendarView(APIView):
+    """FR-8.3/8.4: distinct visit dates (for the BS/AD calendar) plus the
+    current/longest streak, computed by the pure attendance.domain.streak
+    function. 7/30/100-day badges are a client-side comparison against
+    current_streak -- nothing is stored for them.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, token: str):
+        try:
+            data = signing.loads(token, salt=MEMBER_PASS_SALT, max_age=MEMBER_PASS_MAX_AGE)
+        except signing.SignatureExpired:
+            return Response({"detail": "This pass link has expired."}, status=400)
+        except signing.BadSignature:
+            return Response({"detail": "Invalid pass link."}, status=400)
+
+        with system_context():
+            member = get_object_or_404(Member, pk=data["member_id"])
+            visit_dates: list[date] = list(
+                Attendance.objects.filter(member=member)
+                .values_list("check_in_at__date", flat=True)
+                .distinct()
+            )
+            current_streak, longest_streak = compute_streaks(visit_dates)
+            return Response(
+                {
+                    "visit_dates": [d.isoformat() for d in sorted(visit_dates)],
+                    "current_streak": current_streak,
+                    "longest_streak": longest_streak,
                 }
             )

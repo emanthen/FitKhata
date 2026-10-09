@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { listMembers, type Member, type Page } from "@fitkhata/api-client";
@@ -37,9 +37,12 @@ function useDebounced<T>(value: T, delayMs: number): T {
 
 export default function MembersPage() {
   const { gymId } = useParams<{ gymId: string }>();
+  const searchParams = useSearchParams();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("");
-  const [riskState, setRiskState] = useState<string>("");
+  // Pre-filled from a deep link (e.g. the dashboard's Red List widget) --
+  // only read once on mount, the Select above is what drives it after that.
+  const [riskState, setRiskState] = useState<string>(() => searchParams.get("risk_state") ?? "");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const debouncedQ = useDebounced(q, 300);
 

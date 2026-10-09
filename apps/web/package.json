@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "soak:gate": "vitest run --config vitest.soak.config.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "lhci": "lhci autorun"
   },
   "dependencies": {
     "@fitkhata/api-client": "workspace:*",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
+    "@lhci/cli": "^0.14.0",
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",

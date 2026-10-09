@@ -10,3 +10,6 @@ export * from "./staff";
 export * from "./members";
 export * from "./billing";
 export * from "./attendance";
+export * from "./retention";
+export * from "./notifications";
+export * from "./coaching";

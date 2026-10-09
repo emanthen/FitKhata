@@ -2,7 +2,18 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from accounts.models import phone_validator
 from attendance.models import Attendance
+
+
+class MemberLoginOtpSendSerializer(serializers.Serializer):
+    phone = serializers.CharField(validators=[phone_validator])
+
+
+class MemberLoginOtpVerifySerializer(serializers.Serializer):
+    phone = serializers.CharField(validators=[phone_validator])
+    code = serializers.CharField(min_length=6, max_length=6)
+    gym_code = serializers.CharField(max_length=20)
 
 
 class GatePairingCodeSerializer(serializers.Serializer):

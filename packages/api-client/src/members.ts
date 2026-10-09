@@ -15,6 +15,7 @@ export interface Member {
   churn_score: number;
   last_check_in_at: string | null;
   marketing_opt_in: boolean;
+  referred_by: string | null;
   created_at: string;
 }
 
@@ -99,6 +100,7 @@ export interface RegisterMemberInput {
   tags?: string[];
   marketing_opt_in?: boolean;
   photo?: File;
+  referred_by?: string;
 }
 
 export const registerMember = (data: RegisterMemberInput): Promise<Member> => {
@@ -177,3 +179,36 @@ export const uploadWaiver = (memberId: string, file: File | Blob): Promise<Waive
   form.append("signed_pdf", file, "waiver.png");
   return httpClient({ method: "POST", url: "/api/v1/waivers/", data: form });
 };
+
+// --- Member-facing membership status (FR-8.3 home status card) ----------
+
+export interface MemberMembershipStatus {
+  plan_name: string;
+  expiry_date: string;
+  days_left: number;
+  status: string;
+}
+
+export const getMemberMembershipStatus = (
+  passToken: string
+): Promise<MemberMembershipStatus | null> =>
+  httpClient({ method: "GET", url: `/api/v1/m/pass/${passToken}/membership-status` });
+
+// --- Member-facing feedback/complaint form (FR-8.6) ---------------------
+
+export interface MemberFeedback {
+  id: string;
+  member: string;
+  message: string;
+  created_at: string;
+}
+
+export const submitMemberFeedback = (
+  passToken: string,
+  message: string
+): Promise<MemberFeedback> =>
+  httpClient({
+    method: "POST",
+    url: `/api/v1/m/pass/${passToken}/feedback`,
+    data: { message },
+  });

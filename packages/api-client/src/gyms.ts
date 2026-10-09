@@ -5,6 +5,7 @@ export interface Organization {
   name: string;
   pan_vat_no: string;
   is_vat_registered: boolean;
+  vat_inclusive_pricing: boolean;
   saas_plan: string;
   saas_status: string;
   created_at: string;
@@ -19,7 +20,13 @@ export interface Gym {
   city: string;
   phone: string;
   timezone: string;
-  settings: { warning_days: number; red_list_days: number; anti_passback_min: number };
+  settings: {
+    warning_days: number;
+    red_list_days: number;
+    anti_passback_min: number;
+    notification_events?: Record<string, boolean>;
+    notification_channel_order?: string[];
+  };
   created_at: string;
 }
 
@@ -48,3 +55,15 @@ export const createGym = (data: {
 }): Promise<Gym> => httpClient({ method: "POST", url: "/api/v1/gyms", data });
 
 export const myGyms = (): Promise<MyGym[]> => httpClient({ method: "GET", url: "/api/v1/gyms/mine" });
+
+export const getGymSettings = (): Promise<Gym> =>
+  httpClient({ method: "GET", url: "/api/v1/gyms/settings" });
+
+export const updateGymSettings = (data: Partial<Gym>): Promise<Gym> =>
+  httpClient({ method: "PATCH", url: "/api/v1/gyms/settings", data });
+
+export const getOrgSettings = (): Promise<Organization> =>
+  httpClient({ method: "GET", url: "/api/v1/orgs/settings" });
+
+export const updateOrgSettings = (data: Partial<Organization>): Promise<Organization> =>
+  httpClient({ method: "PATCH", url: "/api/v1/orgs/settings", data });

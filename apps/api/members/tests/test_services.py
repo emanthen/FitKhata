@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from datetime import date
+import uuid
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
 from django.db import IntegrityError
 
+from billing.models import Payment
+from billing.services import collect_payment
 from core.context import system_context
 from gyms.models import Gym, Organization
 from members.models import AddOn, Plan, PromoCode
@@ -166,10 +169,11 @@ def test_transfer_member_moves_to_new_gym_same_org(gym, other_gym):
     with system_context():
         member = register_member(gym, full_name="Ram Shrestha", phone="+9779800000001")
 
-    # Not nested in the outer system_context(): transfer_member() opens its
-    # own internally (it's a cross-tenant write by nature — see its
-    # docstring), and system_context()'s RESET ROLE on exit isn't reentrant
-    # — nesting it would reset the role out from under the outer context.
+    # Not nested in an outer system_context() here on purpose, just to keep
+    # this test honest about transfer_member()'s real call shape — it opens
+    # its own internally (it's a cross-tenant write by nature, see its
+    # docstring) and nesting is safe either way (core/context.py's depth
+    # counting handles it).
     transfer_member(member, other_gym)
 
     with system_context():
@@ -186,3 +190,54 @@ def test_transfer_member_rejects_cross_org(gym):
         member = register_member(gym, full_name="Ram Shrestha", phone="+9779800000001")
         with pytest.raises(ValueError, match="same organization"):
             transfer_member(member, other_org_gym)
+
+
+# --- Referral reward (FR-8.8) -- triggered from billing.services.collect_payment --
+
+
+def _completed_cash_payment(member, amount=Decimal("1000.00")):
+    payment = Payment.objects.create(
+        org=member.org,
+        gym=member.gym,
+        member=member,
+        mode=Payment.Mode.CASH,
+        channel=Payment.Channel.DESK,
+        transaction_uuid=uuid.uuid4(),
+        amount_npr=amount,
+        status=Payment.Status.PENDING,
+    )
+    return collect_payment(payment)
+
+
+def test_reward_referral_triggers_once_on_first_completed_payment(gym, plan):
+    with system_context():
+        referrer = register_member(gym, full_name="Referrer", phone="+9779800000011")
+        referrer_membership = sell_membership(referrer, plan, today=date(2026, 1, 1))
+        before_expiry = referrer_membership.expiry_date
+
+        referred = register_member(
+            gym, full_name="Referred", phone="+9779800000012", referred_by=referrer
+        )
+
+        _completed_cash_payment(referred)
+        referrer_membership.refresh_from_db()
+        assert referrer_membership.expiry_date == before_expiry + timedelta(days=7)
+
+        # A second completed payment from the same referred member must not
+        # reward the referrer again.
+        _completed_cash_payment(referred)
+        referrer_membership.refresh_from_db()
+        assert referrer_membership.expiry_date == before_expiry + timedelta(days=7)
+
+
+def test_reward_referral_no_op_without_referred_by(gym, plan):
+    with system_context():
+        referrer = register_member(gym, full_name="Referrer", phone="+9779800000013")
+        referrer_membership = sell_membership(referrer, plan, today=date(2026, 1, 1))
+        before_expiry = referrer_membership.expiry_date
+
+        not_referred = register_member(gym, full_name="Not Referred", phone="+9779800000014")
+        _completed_cash_payment(not_referred)
+
+        referrer_membership.refresh_from_db()
+        assert referrer_membership.expiry_date == before_expiry

@@ -8,6 +8,12 @@ export interface CachedPass {
   full_name: string;
   gym_code: string;
   qr_secret_hex: string;
+  // The redeemed link's own token — MemberPassView checks only its
+  // signature/age, it isn't single-use, so this is safe to keep and reuse
+  // for the renewal endpoints (lib/member/pass.ts's whole raison d'être is
+  // avoiding a re-fetch; renewal needs a token exactly as much as the pass
+  // screen itself does).
+  token: string;
 }
 
 const KEY = "fitkhata.member.pass";

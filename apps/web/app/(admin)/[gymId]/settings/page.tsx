@@ -42,6 +42,45 @@ export default function SettingsPage() {
       </section>
 
       <section className="space-y-2">
+        <h2 className="text-lg font-medium">Billing</h2>
+        <div className="flex gap-4 text-sm">
+          <Link href={`/${gymId}/settings/payments`} className="text-blue-600 hover:underline">
+            Payment gateways &amp; VAT
+          </Link>
+          <Link href={`/${gymId}/billing/shift`} className="text-blue-600 hover:underline">
+            Cash shift
+          </Link>
+          <Link href={`/${gymId}/billing/settlement`} className="text-blue-600 hover:underline">
+            Settlement report
+          </Link>
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-lg font-medium">Notifications</h2>
+        <div className="flex gap-4 text-sm">
+          <Link
+            href={`/${gymId}/settings/notifications/templates`}
+            className="text-blue-600 hover:underline"
+          >
+            Templates
+          </Link>
+          <Link
+            href={`/${gymId}/settings/notifications/events`}
+            className="text-blue-600 hover:underline"
+          >
+            Event triggers
+          </Link>
+          <Link href={`/${gymId}/notifications/broadcast`} className="text-blue-600 hover:underline">
+            Broadcast
+          </Link>
+          <Link href={`/${gymId}/notifications/log`} className="text-blue-600 hover:underline">
+            Delivery log
+          </Link>
+        </div>
+      </section>
+
+      <section className="space-y-2">
         <h2 className="text-lg font-medium">Device sessions</h2>
         <ul className="space-y-2">
           {sessions?.map((session) => (

@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 
 from django.core import signing
+from django.db import transaction
 from django.db.models import Q
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import permissions, status, viewsets
@@ -169,13 +170,27 @@ class TotpSetupView(APIView):
         # secret, since TotpConfirmView checks the latest unconfirmed device
         # and a stale displayed secret from a since-replaced device would
         # never verify.
-        device = (
-            TOTPDevice.objects.filter(user=request.user, confirmed=False)
-            .order_by("-id")
-            .first()
-        )
-        if device is None:
-            device = TOTPDevice.objects.create(user=request.user, name="default", confirmed=False)
+        #
+        # Locks the User row, not a TOTPDevice query, as the mutex: for a
+        # brand-new user's very first call there's no TOTPDevice row yet to
+        # select_for_update() — locking a query with zero matching rows
+        # locks nothing, so two concurrent calls would both see "no
+        # unconfirmed device" and both create one regardless. The User row
+        # always exists, so locking *it* actually serializes the two
+        # calls — same reasoning as MemberCodeCounter/InvoiceCounter's
+        # locked-counter-row pattern elsewhere in this codebase, just with
+        # the user standing in for a counter row that doesn't exist here.
+        with transaction.atomic():
+            User.objects.select_for_update().get(pk=request.user.pk)
+            device = (
+                TOTPDevice.objects.filter(user=request.user, confirmed=False)
+                .order_by("-id")
+                .first()
+            )
+            if device is None:
+                device = TOTPDevice.objects.create(
+                    user=request.user, name="default", confirmed=False
+                )
         # base32, not device.key's hex — authenticator apps expect base32 for
         # manual entry, and it's what's already embedded in otpauth_url.
         secret = base64.b32encode(device.bin_key).decode()

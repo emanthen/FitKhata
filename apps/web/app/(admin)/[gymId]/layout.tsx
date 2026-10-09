@@ -11,6 +11,8 @@ import { BranchSwitcher } from "@/components/branch-switcher";
 const NAV_ITEMS: { label: string; href: string; minRole: string | null }[] = [
   { label: "Dashboard", href: "", minRole: null },
   { label: "Members", href: "/members", minRole: "front_desk" },
+  { label: "Call queue", href: "/retention/queue", minRole: "front_desk" },
+  { label: "Retention", href: "/retention", minRole: "front_desk" },
   { label: "Staff", href: "/staff", minRole: "manager" },
   { label: "Settings", href: "/settings", minRole: "owner" },
 ];

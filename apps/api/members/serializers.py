@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from members.models import AddOn, ImportJob, Member, Membership, Plan, PromoCode, Waiver
+from members.models import (
+    AddOn,
+    ImportJob,
+    Member,
+    MemberFeedback,
+    Membership,
+    Plan,
+    PromoCode,
+    Waiver,
+)
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -13,6 +22,7 @@ class MemberSerializer(serializers.ModelSerializer):
             "member_code",
             "full_name",
             "phone",
+            "email",
             "gender",
             "dob",
             "emergency_contact",
@@ -23,6 +33,9 @@ class MemberSerializer(serializers.ModelSerializer):
             "churn_score",
             "last_check_in_at",
             "marketing_opt_in",
+            "notifications_opt_out",
+            "language",
+            "referred_by",
             "created_at",
         ]
         read_only_fields = [
@@ -110,6 +123,17 @@ class WaiverSerializer(serializers.ModelSerializer):
         model = Waiver
         fields = ["id", "member", "signed_pdf", "signed_at", "ip"]
         read_only_fields = ["id", "signed_at", "ip"]
+
+
+class MemberFeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MemberFeedback
+        fields = ["id", "member", "message", "created_at"]
+        read_only_fields = fields
+
+
+class MemberFeedbackCreateSerializer(serializers.Serializer):
+    message = serializers.CharField(max_length=1000)
 
 
 class ImportJobSerializer(serializers.ModelSerializer):

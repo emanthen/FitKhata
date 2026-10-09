@@ -13,6 +13,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "name",
             "pan_vat_no",
             "is_vat_registered",
+            "vat_inclusive_pricing",
             "saas_plan",
             "saas_status",
             "created_at",

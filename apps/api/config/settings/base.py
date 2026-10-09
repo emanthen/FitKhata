@@ -1,6 +1,7 @@
 """Settings shared by every environment. Env-specific files import * from here."""
 
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import environ
@@ -144,6 +145,11 @@ if AWS_STORAGE_BUCKET_NAME:
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:3000"])
 CORS_ALLOW_HEADERS = [*default_headers, "x-gym-id"]
 
+# This API's own public origin — for building links that go out in an SMS
+# (billing/receipts.py's receipt link) rather than being resolved by a
+# browser already on the right origin.
+API_PUBLIC_URL = env("API_PUBLIC_URL", default="http://localhost:8000")
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -161,11 +167,13 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
 }
 
-# SMS: "console" (dev, logs instead of sending) or "sparrow" (Sparrow SMS, needs
-# SPARROW_SMS_TOKEN/SPARROW_SMS_IDENTITY). See accounts/sms.py.
+# SMS: "console" (dev, logs instead of sending), "sparrow" (Sparrow SMS, needs
+# SPARROW_SMS_TOKEN/SPARROW_SMS_IDENTITY), or "aakash" (Aakash SMS, needs
+# AAKASH_SMS_AUTH_TOKEN). See accounts/sms.py.
 SMS_PROVIDER = env("SMS_PROVIDER", default="console")
 SPARROW_SMS_TOKEN = env("SPARROW_SMS_TOKEN", default="")
 SPARROW_SMS_IDENTITY = env("SPARROW_SMS_IDENTITY", default="")
+AAKASH_SMS_AUTH_TOKEN = env("AAKASH_SMS_AUTH_TOKEN", default="")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "FitKhata API",
@@ -198,3 +206,34 @@ if SENTRY_DSN:
 
 # Fernet key for per-gym payment credential encryption (core.crypto). Rule 10.
 FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="")
+
+# Notifications (Phase 6) — see notifications/services.py and providers/.
+SMS_COST_NPR = Decimal(env("SMS_COST_NPR", default="1.50"))
+
+WHATSAPP_CLOUD_API_TOKEN = env("WHATSAPP_CLOUD_API_TOKEN", default="")
+WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")
+WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")
+WHATSAPP_WEBHOOK_VERIFY_TOKEN = env("WHATSAPP_WEBHOOK_VERIFY_TOKEN", default="")
+
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
+VAPID_CONTACT_EMAIL = env("VAPID_CONTACT_EMAIL", default="admin@fitkhata.com")
+
+# No EMAIL_* settings existed anywhere in this repo before Phase 6 — the
+# "email (SMTP)" notification channel needs Django's standard ones. Console
+# backend in dev (prints instead of sending), same spirit as SMS_PROVIDER's
+# "console" default.
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@fitkhata.com")
+
+# AI coaching (Phase 7) — see coaching/ai.py.
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", default="claude-sonnet-5")
+# Static manual FX rate, not a live pull — not worth the complexity until
+# NPR drift actually matters for a monthly AI budget this coarse.
+ANTHROPIC_USD_TO_NPR_RATE = Decimal(env("ANTHROPIC_USD_TO_NPR_RATE", default="140.00"))

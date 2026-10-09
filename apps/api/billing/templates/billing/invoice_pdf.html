@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invoice {{ invoice.number }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10.5pt; color: #1a1a1a; }
+  h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: 0.03em; }
+  .muted { color: #555; }
+  .header { display: flex; justify-content: space-between; border-bottom: 1.2pt solid #1a1a1a; padding-bottom: 4mm; margin-bottom: 6mm; }
+  .header .org { max-width: 55%; }
+  .header .meta { text-align: right; font-size: 9.5pt; }
+  .parties { display: flex; justify-content: space-between; margin-bottom: 6mm; }
+  .parties .block { max-width: 48%; }
+  .label { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.05em; color: #777; margin-bottom: 1mm; }
+  table.lines { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
+  table.lines th { text-align: left; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.03em; color: #555; border-bottom: 1pt solid #999; padding: 2mm 1.5mm; }
+  table.lines td { padding: 2mm 1.5mm; border-bottom: 0.5pt solid #ddd; font-variant-numeric: tabular-nums; }
+  table.lines th.num, table.lines td.num { text-align: right; }
+  table.totals { width: 60mm; margin-left: auto; border-collapse: collapse; }
+  table.totals td { padding: 1.2mm 0; font-variant-numeric: tabular-nums; }
+  table.totals td.num { text-align: right; }
+  table.totals tr.grand td { font-weight: bold; font-size: 12pt; border-top: 1.2pt solid #1a1a1a; padding-top: 2.5mm; }
+  .void-stamp { position: fixed; top: 40%; left: 20%; font-size: 48pt; color: rgba(180,40,20,0.35); border: 4pt solid rgba(180,40,20,0.35); padding: 2mm 8mm; transform: rotate(-18deg); text-transform: uppercase; letter-spacing: 0.1em; }
+  .footer { margin-top: 10mm; font-size: 8.5pt; color: #777; }
+</style>
+</head>
+<body>
+
+{% if invoice.status == "void" %}
+<div class="void-stamp">Void</div>
+{% endif %}
+
+<div class="header">
+  <div class="org">
+    <h1>{{ org.name }}</h1>
+    {% if org.is_vat_registered %}<div class="muted">PAN/VAT: {{ org.pan_vat_no }}</div>{% endif %}
+    <div class="muted">{{ gym.name }}{% if gym.address %} &middot; {{ gym.address }}{% endif %}</div>
+    {% if gym.phone %}<div class="muted">{{ gym.phone }}</div>{% endif %}
+  </div>
+  <div class="meta">
+    <div><strong>{% if org.is_vat_registered %}TAX INVOICE{% else %}INVOICE{% endif %}</strong></div>
+    <div>No. {{ invoice.number }}</div>
+    <div>{{ invoice.bill_date|date:"Y-m-d" }} AD</div>
+    <div>{{ invoice.bill_date_bs }} BS</div>
+  </div>
+</div>
+
+<div class="parties">
+  <div class="block">
+    <div class="label">Billed to</div>
+    <div>{{ invoice.buyer_name|default:invoice.member.full_name }}</div>
+    {% if invoice.buyer_pan %}<div class="muted">PAN: {{ invoice.buyer_pan }}</div>{% endif %}
+    <div class="muted">{{ invoice.member.member_code }}</div>
+  </div>
+  <div class="block">
+    <div class="label">Fiscal year</div>
+    <div>{{ invoice.fiscal_year }}/{{ fiscal_year_short }}</div>
+  </div>
+</div>
+
+<table class="lines">
+  <thead>
+    <tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr>
+  </thead>
+  <tbody>
+    {% for line in invoice.lines.all %}
+    <tr>
+      <td>{{ line.description }}</td>
+      <td class="num">{{ line.quantity }}</td>
+      <td class="num">{{ line.unit_price_npr }}</td>
+      <td class="num">{{ line.line_total_npr }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<table class="totals">
+  <tr><td>Subtotal</td><td class="num">{{ invoice.subtotal_npr }}</td></tr>
+  {% if invoice.discount_npr %}<tr><td>Discount</td><td class="num">&minus;{{ invoice.discount_npr }}</td></tr>{% endif %}
+  {% if org.is_vat_registered %}
+  <tr><td>Taxable</td><td class="num">{{ invoice.taxable_npr }}</td></tr>
+  <tr><td>VAT (13%)</td><td class="num">{{ invoice.vat_npr }}</td></tr>
+  {% endif %}
+  <tr class="grand"><td>Total</td><td class="num">NPR {{ invoice.total_npr }}</td></tr>
+</table>
+
+{% if invoice.status == "void" and invoice.void_reason %}
+<div class="footer"><strong>Void reason:</strong> {{ invoice.void_reason }}</div>
+{% endif %}
+
+<div class="footer">Issued by FitKhata &middot; {{ gym.name }}</div>
+
+</body>
+</html>

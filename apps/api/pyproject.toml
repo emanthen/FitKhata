@@ -27,8 +27,12 @@ dependencies = [
   "django-cors-headers>=4.4",
   "pillow>=12.3.0",
   "openpyxl>=3.1.5",
+  "weasyprint>=63.0",
   "hypothesis>=6.168.3",
   "django-filter>=25.1",
+  "pywebpush>=2.0",
+  "anthropic>=0.69",
+  "pydantic>=2.9",
 ]
 
 [dependency-groups]

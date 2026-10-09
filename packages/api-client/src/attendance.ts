@@ -125,3 +125,34 @@ export const createMemberPassLink = (memberId: number): Promise<{ token: string 
     url: "/api/v1/attendance/member-pass-links",
     data: { member_id: memberId },
   });
+
+// --- Member self-login by phone OTP (FR-8.2) ---------------------------
+
+export const sendMemberLoginOtp = (phone: string): Promise<void> =>
+  deviceAxios.post("/api/v1/m/login/otp/send", { phone }).then(() => undefined);
+
+export interface MemberLoginResult extends MemberPassRedemption {
+  token: string;
+}
+
+export const verifyMemberLoginOtp = (
+  phone: string,
+  code: string,
+  gymCode: string
+): Promise<MemberLoginResult> =>
+  deviceAxios
+    .post("/api/v1/m/login/otp/verify", { phone, code, gym_code: gymCode })
+    .then((r) => r.data);
+
+// --- Member attendance calendar + streak (FR-8.3/8.4) -------------------
+
+export interface MemberAttendanceCalendar {
+  visit_dates: string[];
+  current_streak: number;
+  longest_streak: number;
+}
+
+export const getMemberAttendanceCalendar = (
+  passToken: string
+): Promise<MemberAttendanceCalendar> =>
+  httpClient({ method: "GET", url: `/api/v1/m/pass/${passToken}/attendance` });

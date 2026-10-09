@@ -42,6 +42,10 @@ class Member(TenantModel):
         FEMALE = "female", "Female"
         OTHER = "other", "Other"
 
+    class Language(models.TextChoices):
+        NEPALI = "ne", "Nepali"
+        ENGLISH = "en", "English"
+
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
         EXPIRED = "expired", "Expired"
@@ -57,6 +61,7 @@ class Member(TenantModel):
     member_code = models.CharField(max_length=20)
     full_name = models.CharField(max_length=200)
     phone = models.CharField(max_length=20, validators=[phone_validator])
+    email = models.EmailField(blank=True)
     gender = models.CharField(max_length=10, choices=Gender.choices, blank=True)
     dob = models.DateField(null=True, blank=True)
     emergency_contact = models.JSONField(default=dict, blank=True)
@@ -76,12 +81,27 @@ class Member(TenantModel):
     # scanned card UID to a member the same way it resolves member_code.
     card_uid = models.CharField(max_length=64, blank=True)
     marketing_opt_in = models.BooleanField(default=False)
+    # Distinct from marketing_opt_in (campaign-only, FR-5 winback): this
+    # blocks every notifications.notify() call, transactional included —
+    # see notifications/services.py.
+    notifications_opt_out = models.BooleanField(default=False)
+    language = models.CharField(max_length=5, choices=Language.choices, default=Language.NEPALI)
     user = models.ForeignKey(
         "accounts.User",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="member_profiles",
+    )
+    # FR-8.8: the referral code IS member_code (no separate code-generation
+    # system) -- staff enters this at registration (recited by the member),
+    # since no member self-registration flow exists to capture it otherwise.
+    referred_by = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referrals",
     )
 
     class Meta:
@@ -214,6 +234,19 @@ class Waiver(TenantModel):
 
     def __str__(self) -> str:
         return f"waiver:{self.member_id}:{self.signed_at:%Y-%m-%d}"
+
+
+class MemberFeedback(TenantModel):
+    """FR-8.6: a member-submitted complaint/feedback, routed to the branch
+    manager by members.services.submit_feedback -- gym-wide and member-
+    initiated, not specific to coaching or retention's domains.
+    """
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="feedback")
+    message = models.TextField(max_length=1000)
+
+    def __str__(self) -> str:
+        return f"feedback:{self.member_id}:{self.created_at:%Y-%m-%d}"
 
 
 class ImportJob(TenantModel):
