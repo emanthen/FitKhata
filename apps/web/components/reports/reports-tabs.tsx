@@ -26,10 +26,10 @@ export function ReportsTabs() {
           <Link
             key={tab.href}
             href={href}
-            className={`rounded px-2.5 py-1 ${
+            className={`rounded-md px-2.5 py-1 transition-colors ${
               active
-                ? "bg-neutral-100 font-medium dark:bg-neutral-800"
-                : "opacity-70 hover:opacity-100"
+                ? "bg-primary/10 font-medium text-primary"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {tab.label}

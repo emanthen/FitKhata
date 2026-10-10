@@ -4,6 +4,22 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { listSessions, revokeSession, type DeviceSession } from "@fitkhata/api-client";
+import { Bell, ChevronRight, CreditCard, Laptop, Ticket } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+function SettingsLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+    >
+      {label}
+      <ChevronRight size={15} strokeWidth={2} className="text-muted-foreground" />
+    </Link>
+  );
+}
 
 export default function SettingsPage() {
   const { gymId } = useParams<{ gymId: string }>();
@@ -23,85 +39,86 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Settings</h1>
+    <div className="max-w-2xl space-y-4">
+      <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Membership</h2>
-        <div className="flex gap-4 text-sm">
-          <Link href={`/${gymId}/settings/plans`} className="text-blue-600 hover:underline">
-            Plans &amp; add-ons
-          </Link>
-          <Link href={`/${gymId}/settings/promo-codes`} className="text-blue-600 hover:underline">
-            Promo codes
-          </Link>
-          <Link href={`/${gymId}/members/import`} className="text-blue-600 hover:underline">
-            Import members
-          </Link>
-        </div>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Ticket size={16} strokeWidth={2} className="text-primary" />
+            Membership
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col">
+          <SettingsLink href={`/${gymId}/settings/plans`} label="Plans & add-ons" />
+          <SettingsLink href={`/${gymId}/settings/promo-codes`} label="Promo codes" />
+          <SettingsLink href={`/${gymId}/members/import`} label="Import members" />
+        </CardContent>
+      </Card>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Billing</h2>
-        <div className="flex gap-4 text-sm">
-          <Link href={`/${gymId}/settings/payments`} className="text-blue-600 hover:underline">
-            Payment gateways &amp; VAT
-          </Link>
-          <Link href={`/${gymId}/billing/shift`} className="text-blue-600 hover:underline">
-            Cash shift
-          </Link>
-          <Link href={`/${gymId}/billing/settlement`} className="text-blue-600 hover:underline">
-            Settlement report
-          </Link>
-        </div>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard size={16} strokeWidth={2} className="text-primary" />
+            Billing
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col">
+          <SettingsLink href={`/${gymId}/settings/payments`} label="Payment gateways & VAT" />
+          <SettingsLink href={`/${gymId}/billing/shift`} label="Cash shift" />
+          <SettingsLink href={`/${gymId}/billing/settlement`} label="Settlement report" />
+        </CardContent>
+      </Card>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Notifications</h2>
-        <div className="flex gap-4 text-sm">
-          <Link
-            href={`/${gymId}/settings/notifications/templates`}
-            className="text-blue-600 hover:underline"
-          >
-            Templates
-          </Link>
-          <Link
-            href={`/${gymId}/settings/notifications/events`}
-            className="text-blue-600 hover:underline"
-          >
-            Event triggers
-          </Link>
-          <Link href={`/${gymId}/notifications/broadcast`} className="text-blue-600 hover:underline">
-            Broadcast
-          </Link>
-          <Link href={`/${gymId}/notifications/log`} className="text-blue-600 hover:underline">
-            Delivery log
-          </Link>
-        </div>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell size={16} strokeWidth={2} className="text-primary" />
+            Notifications
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col">
+          <SettingsLink href={`/${gymId}/settings/notifications/templates`} label="Templates" />
+          <SettingsLink href={`/${gymId}/settings/notifications/events`} label="Event triggers" />
+          <SettingsLink href={`/${gymId}/notifications/broadcast`} label="Broadcast" />
+          <SettingsLink href={`/${gymId}/notifications/log`} label="Delivery log" />
+        </CardContent>
+      </Card>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Device sessions</h2>
-        <ul className="space-y-2">
-          {sessions?.map((session) => (
-            <li
-              key={session.id}
-              className="flex items-center justify-between rounded border px-3 py-2 text-sm"
-            >
-              <span>
-                {session.user_agent || "Unknown device"} · {session.ip ?? "unknown IP"}
-                <br />
-                <span className="opacity-60">
-                  Last used {new Date(session.last_used_at).toLocaleString()}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Laptop size={16} strokeWidth={2} className="text-primary" />
+            Device sessions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y">
+            {sessions?.map((session) => (
+              <li key={session.id} className="flex items-center justify-between py-2.5 text-sm">
+                <span>
+                  {session.user_agent || "Unknown device"} &middot; {session.ip ?? "unknown IP"}
+                  <br />
+                  <span className="text-xs text-muted-foreground">
+                    Last used {new Date(session.last_used_at).toLocaleString()}
+                  </span>
                 </span>
-              </span>
-              <button onClick={() => revoke(session.id)} className="text-red-600 hover:underline">
-                Revoke
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => revoke(session.id)}
+                >
+                  Revoke
+                </Button>
+              </li>
+            ))}
+            {sessions?.length === 0 && (
+              <li className="py-2.5 text-sm text-muted-foreground">No active sessions.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

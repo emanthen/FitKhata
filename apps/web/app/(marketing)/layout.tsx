@@ -1,3 +1,12 @@
+import { MarketingNav } from "@/components/marketing/nav";
+import { MarketingFooter } from "@/components/marketing/footer";
+
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-5xl px-4 py-16">{children}</main>;
+  return (
+    <div className="surface-marketing font-marketing min-h-[100dvh]">
+      <MarketingNav />
+      {children}
+      <MarketingFooter />
+    </div>
+  );
 }

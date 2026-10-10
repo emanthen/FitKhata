@@ -8,8 +8,11 @@ import {
   updateGymSettings,
   type NotificationChannel,
 } from "@fitkhata/api-client";
+import { ArrowDown, ArrowUp, ListOrdered, ToggleLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CHANNEL_OPTIONS: NotificationChannel[] = ["push", "whatsapp", "sms", "email"];
 const DEFAULT_ORDER: NotificationChannel[] = ["push", "whatsapp", "sms"];
@@ -49,74 +52,96 @@ export default function NotificationEventsPage() {
       .finally(() => setSaving(false));
   }
 
-  if (gym.isLoading) return <p className="text-sm opacity-60">Loading...</p>;
+  if (gym.isLoading) {
+    return (
+      <div className="max-w-xl space-y-4">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-xl space-y-8">
-      <h1 className="text-2xl font-semibold">Notification triggers</h1>
+    <div className="max-w-xl space-y-5">
+      <h1 className="text-xl font-semibold tracking-tight">Notification triggers</h1>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Channel order</h2>
-        <p className="text-sm opacity-60">
-          notify() tries each channel in this order, falling back to the next if a member has
-          no usable destination on the current one.
-        </p>
-        <ol className="space-y-1">
-          {order.map((channel, i) => (
-            <li key={channel} className="flex items-center justify-between rounded border px-3 py-2">
-              <span className="capitalize">
-                {i + 1}. {channel}
-              </span>
-              <span className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={i === 0 || saving}
-                  onClick={() => moveChannel(i, -1)}
-                >
-                  ↑
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={i === order.length - 1 || saving}
-                  onClick={() => moveChannel(i, 1)}
-                >
-                  ↓
-                </Button>
-              </span>
-            </li>
-          ))}
-        </ol>
-        <p className="text-xs opacity-50">
-          Channels not shown here ({CHANNEL_OPTIONS.filter((c) => !order.includes(c)).join(", ") || "none"}) are never tried automatically.
-        </p>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Events</h2>
-        <ul className="space-y-1">
-          {TEMPLATE_KEYS.map((eventKey) => {
-            const enabled = events[eventKey] ?? true;
-            return (
-              <li
-                key={eventKey}
-                className="flex items-center justify-between rounded border px-3 py-2 text-sm"
-              >
-                <span>{eventKey}</span>
-                <Button
-                  variant={enabled ? "default" : "outline"}
-                  size="sm"
-                  disabled={saving}
-                  onClick={() => toggleEvent(eventKey)}
-                >
-                  {enabled ? "On" : "Off"}
-                </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ListOrdered size={16} strokeWidth={2} className="text-primary" />
+            Channel order
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            notify() tries each channel in this order, falling back to the next if a member has
+            no usable destination on the current one.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ol className="divide-y">
+            {order.map((channel, i) => (
+              <li key={channel} className="flex items-center justify-between py-2 text-sm">
+                <span className="capitalize">
+                  {i + 1}. {channel}
+                </span>
+                <span className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    disabled={i === 0 || saving}
+                    onClick={() => moveChannel(i, -1)}
+                    aria-label="Move up"
+                  >
+                    <ArrowUp size={13} strokeWidth={2} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    disabled={i === order.length - 1 || saving}
+                    onClick={() => moveChannel(i, 1)}
+                    aria-label="Move down"
+                  >
+                    <ArrowDown size={13} strokeWidth={2} />
+                  </Button>
+                </span>
               </li>
-            );
-          })}
-        </ul>
-      </section>
+            ))}
+          </ol>
+          <p className="text-xs text-muted-foreground">
+            Channels not shown here (
+            {CHANNEL_OPTIONS.filter((c) => !order.includes(c)).join(", ") || "none"}) are never
+            tried automatically.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ToggleLeft size={16} strokeWidth={2} className="text-primary" />
+            Events
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y">
+            {TEMPLATE_KEYS.map((eventKey) => {
+              const enabled = events[eventKey] ?? true;
+              return (
+                <li key={eventKey} className="flex items-center justify-between py-2 text-sm">
+                  <span>{eventKey}</span>
+                  <Button
+                    variant={enabled ? "default" : "outline"}
+                    size="sm"
+                    disabled={saving}
+                    onClick={() => toggleEvent(eventKey)}
+                  >
+                    {enabled ? "On" : "Off"}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

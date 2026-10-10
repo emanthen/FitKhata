@@ -2,8 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchDuesAgeingExport, getDuesAgeing } from "@fitkhata/api-client";
+import { ChartColumn, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ReportsTabs } from "@/components/reports/reports-tabs";
 import { formatNpr } from "@/lib/money";
 
@@ -24,46 +27,55 @@ export default function DuesAgeingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Reports</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <ChartColumn size={18} strokeWidth={2} className="text-primary" />
+        Reports
+      </h1>
       <ReportsTabs />
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium opacity-70">Dues ageing</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => downloadExport("csv")}>
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={() => downloadExport("xlsx")}>
-            Export XLSX
-          </Button>
-        </div>
-      </div>
+      <Card>
+        <CardContent>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground">Dues ageing</h2>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => downloadExport("csv")}>
+                <Download size={13} strokeWidth={2} data-icon="inline-start" />
+                CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => downloadExport("xlsx")}>
+                <Download size={13} strokeWidth={2} data-icon="inline-start" />
+                XLSX
+              </Button>
+            </div>
+          </div>
 
-      {query.isLoading ? (
-        <p className="text-sm opacity-60">Loading...</p>
-      ) : (
-        <table className="w-full max-w-md text-sm">
-          <thead>
-            <tr className="border-b text-left opacity-60">
-              <th className="py-1">Age bucket</th>
-              <th className="py-1 text-right">Invoices</th>
-              <th className="py-1 text-right">Total due</th>
-            </tr>
-          </thead>
-          <tbody>
-            {BUCKETS.map((bucket) => {
-              const row = query.data?.[bucket];
-              return (
-                <tr key={bucket} className="border-b">
-                  <td className="py-1.5">{bucket}</td>
-                  <td className="py-1.5 text-right">{row?.count ?? 0}</td>
-                  <td className="py-1.5 text-right">{formatNpr(row?.total_npr ?? "0")}</td>
+          {query.isLoading ? (
+            <Skeleton className="h-28 w-full max-w-md" />
+          ) : (
+            <table className="w-full max-w-md text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="py-1.5">Age bucket</th>
+                  <th className="py-1.5 text-right">Invoices</th>
+                  <th className="py-1.5 text-right">Total due</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+              </thead>
+              <tbody className="font-dashboard-mono">
+                {BUCKETS.map((bucket) => {
+                  const row = query.data?.[bucket];
+                  return (
+                    <tr key={bucket} className="border-b">
+                      <td className="py-1.5 font-sans">{bucket}</td>
+                      <td className="py-1.5 text-right">{row?.count ?? 0}</td>
+                      <td className="py-1.5 text-right">{formatNpr(row?.total_npr ?? "0")}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

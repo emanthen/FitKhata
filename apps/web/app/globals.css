@@ -7,85 +7,188 @@
   color-scheme: light dark;
 }
 
+/* Three surfaces, three token sets — see the Phase 0 moodboard for the
+   rationale (a back-office tool, a sales page, and a mobile pass card have
+   different jobs and are allowed to look different). Dashboard tokens live
+   on bare :root/.dark since the admin/platform console is the default
+   fallback; .surface-marketing and .surface-pwa are applied as a wrapper
+   class on each route group's own layout.tsx and win via normal CSS
+   cascade (closer ancestor beats :root) — every shadcn component already
+   consumes these var() names, so no component code changes needed. */
 @layer base {
   .theme {
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
   }
+
+  /* ---------- dashboard / platform console (default) ---------- */
   :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.985 0 0);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #1e40af;
+    --primary-foreground: #ffffff;
+    --secondary: #e9eef6;
+    --secondary-foreground: #1e3a8a;
+    --muted: #e9eef6;
+    --muted-foreground: #64748b;
+    --accent: #d97706;
+    --accent-foreground: #ffffff;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #1e40af;
+    --chart-1: #1e40af;
+    --chart-2: #d97706;
+    --chart-3: #16a34a;
+    --chart-4: #64748b;
+    --chart-5: #dc2626;
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar: #ffffff;
+    --sidebar-foreground: #0f172a;
+    --sidebar-primary: #1e40af;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e9eef6;
+    --sidebar-accent-foreground: #1e3a8a;
+    --sidebar-border: #e2e8f0;
+    --sidebar-ring: #1e40af;
   }
   .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --destructive-foreground: oklch(0.145 0 0);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #0a0e17;
+    --foreground: #e7ebf3;
+    --card: #131826;
+    --card-foreground: #e7ebf3;
+    --popover: #131826;
+    --popover-foreground: #e7ebf3;
+    --primary: #3b82f6;
+    --primary-foreground: #0a0e17;
+    --secondary: #1b2234;
+    --secondary-foreground: #c7d4ea;
+    --muted: #1b2234;
+    --muted-foreground: #8591a8;
+    --accent: #f59e0b;
+    --accent-foreground: #0a0e17;
+    --destructive: #ef4444;
+    --destructive-foreground: #0a0e17;
+    --border: #232a3b;
+    --input: #232a3b;
+    --ring: #3b82f6;
+    --chart-1: #3b82f6;
+    --chart-2: #f59e0b;
+    --chart-3: #22c55e;
+    --chart-4: #8591a8;
+    --chart-5: #ef4444;
+    --sidebar: #0e1420;
+    --sidebar-foreground: #e7ebf3;
+    --sidebar-primary: #3b82f6;
+    --sidebar-primary-foreground: #0a0e17;
+    --sidebar-accent: #1b2234;
+    --sidebar-accent-foreground: #c7d4ea;
+    --sidebar-border: #232a3b;
+    --sidebar-ring: #3b82f6;
   }
+
+  /* ---------- marketing homepage ---------- */
+  .surface-marketing {
+    --background: #ffffff;
+    --foreground: #111827;
+    --card: #ffffff;
+    --card-foreground: #111827;
+    --popover: #ffffff;
+    --popover-foreground: #111827;
+    --primary: #f97316;
+    --primary-foreground: #1f2937;
+    --secondary: #fff1e6;
+    --secondary-foreground: #9a3412;
+    --muted: #f3f4f6;
+    --muted-foreground: #6b7280;
+    --accent: #22c55e;
+    --accent-foreground: #0f2a17;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --border: #e5e7eb;
+    --input: #e5e7eb;
+    --ring: #f97316;
+    --radius: 0.75rem;
+  }
+  .dark .surface-marketing,
+  .surface-marketing.dark {
+    --background: #1f2937;
+    --foreground: #f8fafc;
+    --card: #27303f;
+    --card-foreground: #f8fafc;
+    --popover: #27303f;
+    --popover-foreground: #f8fafc;
+    --primary: #f97316;
+    --primary-foreground: #1f2937;
+    --secondary: #33261c;
+    --secondary-foreground: #fdba74;
+    --muted: #2b3444;
+    --muted-foreground: #9ca3af;
+    --accent: #22c55e;
+    --accent-foreground: #0f2a17;
+    --destructive: #ef4444;
+    --destructive-foreground: #1f2937;
+    --border: #374151;
+    --input: #374151;
+    --ring: #f97316;
+  }
+
+  /* ---------- member pwa ---------- */
+  .surface-pwa {
+    --background: #eff6ff;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #1e3a8a;
+    --primary-foreground: #ffffff;
+    --secondary: #e0e9fb;
+    --secondary-foreground: #1e3a8a;
+    --muted: #e0e9fb;
+    --muted-foreground: #475569;
+    --accent: #ea580c;
+    --accent-foreground: #ffffff;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --border: #bfdbfe;
+    --input: #bfdbfe;
+    --ring: #1e3a8a;
+    --radius: 0.875rem;
+  }
+  .dark .surface-pwa,
+  .surface-pwa.dark {
+    --background: #0b1430;
+    --foreground: #eef2ff;
+    --card: #142048;
+    --card-foreground: #eef2ff;
+    --popover: #142048;
+    --popover-foreground: #eef2ff;
+    --primary: #5b7fe0;
+    --primary-foreground: #0b1430;
+    --secondary: #1b2a5c;
+    --secondary-foreground: #c7d4f5;
+    --muted: #1b2a5c;
+    --muted-foreground: #9fb0d8;
+    --accent: #fb923c;
+    --accent-foreground: #0b1430;
+    --destructive: #ef4444;
+    --destructive-foreground: #0b1430;
+    --border: #22306b;
+    --input: #22306b;
+    --ring: #5b7fe0;
+  }
+
   * {
     /* No /50 opacity modifier: this project is on Tailwind v3, and the
-       shadcn-generated oklch() CSS variables aren't in the rgb()-with-
-       alpha-channel form v3's opacity modifiers need. Full-opacity ring
-       color is a cosmetic-only difference from the v4 default. */
+       hex-based CSS variables here aren't in the rgb()-with-alpha-channel
+       form v3's opacity modifiers need. Full-opacity ring color is a
+       cosmetic-only difference from the v4 default. */
     @apply border-border outline-ring;
   }
   body {

@@ -13,8 +13,10 @@ import {
   type Template,
   type TemplateKey,
 } from "@fitkhata/api-client";
+import { MessageSquareText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -93,10 +95,10 @@ function LanguageEditor({
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        className="h-28 w-full rounded border p-2 text-sm"
+        className="h-28 w-full rounded-lg border border-input bg-transparent p-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       />
-      <div className="rounded border bg-muted/30 p-2 text-sm">
-        <p className="mb-1 text-xs font-medium opacity-60">Preview</p>
+      <div className="rounded-lg border bg-muted/40 p-2.5 text-sm">
+        <p className="mb-1 text-xs font-medium text-muted-foreground">Preview</p>
         {renderPreview(body)}
       </div>
       <Button size="sm" onClick={save} disabled={saving}>
@@ -133,16 +135,21 @@ export default function TemplateEditorPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">Notification templates</h1>
-      <p className="text-sm opacity-60">
-        Editing here creates your own override for this branch&apos;s organization — the
-        platform default stays as the fallback for every key/channel/language you haven&apos;t
-        customized.
-      </p>
+    <div className="max-w-3xl space-y-5">
+      <div>
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <MessageSquareText size={18} strokeWidth={2} className="text-primary" />
+          Notification templates
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Editing here creates your own override for this branch&apos;s organization - the
+          platform default stays as the fallback for every key/channel/language you haven&apos;t
+          customized.
+        </p>
+      </div>
 
       <div className="flex flex-wrap gap-3">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <Label htmlFor="template-key">Event</Label>
           <Select value={key} onValueChange={(v) => setKey(v as TemplateKey)}>
             <SelectTrigger id="template-key" className="w-56">
@@ -157,7 +164,7 @@ export default function TemplateEditorPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <Label htmlFor="template-channel">Channel</Label>
           <Select value={channel} onValueChange={(v) => setChannel(v as NotificationChannel)}>
             <SelectTrigger id="template-channel" className="w-40">
@@ -174,28 +181,30 @@ export default function TemplateEditorPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <LanguageEditor
-          key={`${key}-${channel}-ne`}
-          language="ne"
-          label="Nepali"
-          override={neOverride}
-          defaultBody={neDefault}
-          onSaved={refresh}
-          templateKey={key}
-          channel={channel}
-        />
-        <LanguageEditor
-          key={`${key}-${channel}-en`}
-          language="en"
-          label="English"
-          override={enOverride}
-          defaultBody={enDefault}
-          onSaved={refresh}
-          templateKey={key}
-          channel={channel}
-        />
-      </div>
+      <Card>
+        <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <LanguageEditor
+            key={`${key}-${channel}-ne`}
+            language="ne"
+            label="Nepali"
+            override={neOverride}
+            defaultBody={neDefault}
+            onSaved={refresh}
+            templateKey={key}
+            channel={channel}
+          />
+          <LanguageEditor
+            key={`${key}-${channel}-en`}
+            language="en"
+            label="English"
+            override={enOverride}
+            defaultBody={enDefault}
+            onSaved={refresh}
+            templateKey={key}
+            channel={channel}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -7,6 +7,11 @@ const config: Config = {
     extend: {
       fontFamily: {
         devanagari: ["var(--font-devanagari)"],
+        dashboard: ["var(--font-dashboard)"],
+        "dashboard-mono": ["var(--font-dashboard-mono)"],
+        "marketing-display": ["var(--font-marketing-display)"],
+        marketing: ["var(--font-marketing)"],
+        pwa: ["var(--font-pwa)"],
       },
       colors: {
         border: "var(--border)",

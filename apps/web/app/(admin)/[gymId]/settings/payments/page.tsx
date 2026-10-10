@@ -13,10 +13,19 @@ import {
   type GatewayEnvironment,
   type GatewayProvider,
 } from "@fitkhata/api-client";
+import { CreditCard, Percent, Trash2, Wifi } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const PROVIDERS: { value: GatewayProvider; label: string }[] = [
   { value: "esewa", label: "eSewa" },
@@ -92,135 +101,160 @@ export default function PaymentSettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-8">
-      <h1 className="text-2xl font-semibold">Payment settings</h1>
+    <div className="max-w-2xl space-y-6">
+      <h1 className="text-xl font-semibold tracking-tight">Payment settings</h1>
 
       <VatSettingsSection />
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Gateway credentials</h2>
-        <p className="text-sm opacity-60">
-          Each gym uses its own eSewa / Khalti / Fonepay merchant account — FitKhata never
-          handles your money directly.
-        </p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard size={16} strokeWidth={2} className="text-primary" />
+            Gateway credentials
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Each gym uses its own eSewa / Khalti / Fonepay merchant account - FitKhata never
+            handles your money directly.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ul className="divide-y">
+            {list.map((c) => (
+              <li key={c.id} className="py-2.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="capitalize">
+                    {c.provider} &middot; {c.environment}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {c.is_configured ? "Configured" : "Not configured"}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => test(c.id)}
+                  >
+                    <Wifi size={13} strokeWidth={2} data-icon="inline-start" />
+                    Test connection
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-destructive hover:text-destructive"
+                    onClick={() => remove(c.id)}
+                  >
+                    <Trash2 size={13} strokeWidth={2} data-icon="inline-start" />
+                    Remove
+                  </Button>
+                  {testResults[c.id] && (
+                    <span className="text-xs text-muted-foreground">{testResults[c.id]}</span>
+                  )}
+                </div>
+              </li>
+            ))}
+            {list.length === 0 && (
+              <li className="py-2.5 text-sm text-muted-foreground">No gateways configured yet.</li>
+            )}
+          </ul>
 
-        <ul className="space-y-2 text-sm">
-          {list.map((c) => (
-            <li key={c.id} className="rounded border px-3 py-2">
-              <div className="flex items-center justify-between">
-                <span className="capitalize">
-                  {c.provider} · {c.environment}
-                </span>
-                <span className="opacity-60">
-                  {c.is_configured ? "Configured" : "Not configured"}
-                </span>
-              </div>
-              <div className="mt-1 flex items-center gap-3 text-xs">
-                <button className="text-blue-600 hover:underline" onClick={() => test(c.id)}>
-                  Test connection
-                </button>
-                <button className="text-red-600 hover:underline" onClick={() => remove(c.id)}>
-                  Remove
-                </button>
-                {testResults[c.id] && <span className="opacity-70">{testResults[c.id]}</span>}
-              </div>
-            </li>
-          ))}
-          {list.length === 0 && <li className="text-sm opacity-60">No gateways configured yet.</li>}
-        </ul>
-
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <form onSubmit={submit} className="space-y-2 rounded border p-3">
-          <div className="flex flex-wrap gap-2">
-            <div className="space-y-1">
-              <Label htmlFor="provider">Provider</Label>
-              <select
-                id="provider"
-                value={provider}
-                onChange={(e) => setProvider(e.target.value as GatewayProvider)}
-                className="h-8 rounded border px-2 text-sm"
-              >
-                {PROVIDERS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="environment">Environment</Label>
-              <select
-                id="environment"
-                value={environment}
-                onChange={(e) => setEnvironment(e.target.value as GatewayEnvironment)}
-                className="h-8 rounded border px-2 text-sm"
-              >
-                <option value="sandbox">Sandbox</option>
-                <option value="live">Live</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="merchant-code">Merchant code</Label>
-              <Input
-                id="merchant-code"
-                value={merchantCode}
-                onChange={(e) => setMerchantCode(e.target.value)}
-                className="w-40"
-                required
-              />
-            </div>
-          </div>
-
-          {provider === "fonepay" ? (
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <form onSubmit={submit} className="space-y-3 rounded-lg border p-3">
             <div className="flex flex-wrap gap-2">
-              <div className="space-y-1">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-40"
-                />
+              <div className="space-y-1.5">
+                <Label htmlFor="provider">Provider</Label>
+                <Select value={provider} onValueChange={(v) => setProvider(v as GatewayProvider)}>
+                  <SelectTrigger id="provider" className="h-8 w-36 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROVIDERS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-40"
-                />
+              <div className="space-y-1.5">
+                <Label htmlFor="environment">Environment</Label>
+                <Select
+                  value={environment}
+                  onValueChange={(v) => setEnvironment(v as GatewayEnvironment)}
+                >
+                  <SelectTrigger id="environment" className="h-8 w-32 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sandbox">Sandbox</SelectItem>
+                    <SelectItem value="live">Live</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="hmac-key">HMAC key</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="merchant-code">Merchant code</Label>
                 <Input
-                  id="hmac-key"
-                  type="password"
-                  value={hmacKey}
-                  onChange={(e) => setHmacKey(e.target.value)}
-                  className="w-40"
+                  id="merchant-code"
+                  value={merchantCode}
+                  onChange={(e) => setMerchantCode(e.target.value)}
+                  className="h-8 w-40"
+                  required
                 />
               </div>
             </div>
-          ) : (
-            <div className="space-y-1">
-              <Label htmlFor="secret">Secret key</Label>
-              <Input
-                id="secret"
-                type="password"
-                value={secret}
-                onChange={(e) => setSecret(e.target.value)}
-                className="w-80"
-              />
-            </div>
-          )}
 
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "..." : "Add credential"}
-          </Button>
-        </form>
-      </section>
+            {provider === "fonepay" ? (
+              <div className="flex flex-wrap gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="h-8 w-40"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-8 w-40"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="hmac-key">HMAC key</Label>
+                  <Input
+                    id="hmac-key"
+                    type="password"
+                    value={hmacKey}
+                    onChange={(e) => setHmacKey(e.target.value)}
+                    className="h-8 w-40"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="secret">Secret key</Label>
+                <Input
+                  id="secret"
+                  type="password"
+                  value={secret}
+                  onChange={(e) => setSecret(e.target.value)}
+                  className="h-8 w-80"
+                />
+              </div>
+            )}
+
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "..." : "Add credential"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -242,20 +276,27 @@ function VatSettingsSection() {
   }
 
   return (
-    <section className="space-y-2">
-      <h2 className="text-lg font-medium">VAT</h2>
-      <p className="text-sm opacity-60">
-        Whether your plan/item prices already include VAT (sticker price = final price), or VAT is
-        added on top at invoice time. Currently:{" "}
-        <strong>
-          {org.isLoading ? "..." : org.data?.vat_inclusive_pricing ? "inclusive" : "exclusive"}
-        </strong>
-      </p>
-      <Button variant="outline" size="sm" onClick={toggle} disabled={saving || org.isLoading}>
-        {org.data?.vat_inclusive_pricing
-          ? "Switch to VAT-exclusive pricing"
-          : "Switch to VAT-inclusive pricing"}
-      </Button>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Percent size={16} strokeWidth={2} className="text-primary" />
+          VAT
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Whether your plan/item prices already include VAT (sticker price = final price), or VAT
+          is added on top at invoice time. Currently:{" "}
+          <strong className="text-foreground">
+            {org.isLoading ? "..." : org.data?.vat_inclusive_pricing ? "inclusive" : "exclusive"}
+          </strong>
+        </p>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" size="sm" onClick={toggle} disabled={saving || org.isLoading}>
+          {org.data?.vat_inclusive_pricing
+            ? "Switch to VAT-exclusive pricing"
+            : "Switch to VAT-inclusive pricing"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

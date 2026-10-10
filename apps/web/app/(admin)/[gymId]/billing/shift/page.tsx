@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { closeCashShift, openCashShift, type CashShift } from "@fitkhata/api-client";
+import { CircleCheck, TriangleAlert, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatNpr } from "@/lib/money";
@@ -61,21 +63,31 @@ export default function CashShiftPage() {
 
   if (closed) {
     const variance = Number(closed.variance_npr);
+    const flagged = Math.abs(variance) > 100;
     return (
-      <div className="max-w-md space-y-3">
-        <h1 className="text-2xl font-semibold">Shift closed</h1>
-        <p className="text-sm">
-          Expected {formatNpr(closed.expected_cash_npr, { symbol: true })}, counted{" "}
-          {formatNpr(closed.counted_cash_npr ?? "0", { symbol: true })}.
-        </p>
-        <p
-          className={`text-sm font-medium ${
-            Math.abs(variance) > 100 ? "text-red-600" : "text-green-700"
-          }`}
-        >
-          Variance: {formatNpr(closed.variance_npr ?? "0", { symbol: true })}
-          {Math.abs(variance) > 100 && " — the owner has been notified."}
-        </p>
+      <div className="max-w-md space-y-4">
+        <h1 className="text-xl font-semibold tracking-tight">Shift closed</h1>
+        <Card>
+          <CardContent className="space-y-2">
+            <p className="font-dashboard-mono text-sm">
+              Expected {formatNpr(closed.expected_cash_npr, { symbol: true })}, counted{" "}
+              {formatNpr(closed.counted_cash_npr ?? "0", { symbol: true })}.
+            </p>
+            <p
+              className={`font-dashboard-mono flex items-center gap-1.5 text-sm font-medium ${
+                flagged ? "text-destructive" : "text-foreground"
+              }`}
+            >
+              {flagged ? (
+                <TriangleAlert size={14} strokeWidth={2} />
+              ) : (
+                <CircleCheck size={14} strokeWidth={2} />
+              )}
+              Variance: {formatNpr(closed.variance_npr ?? "0", { symbol: true })}
+              {flagged && <span className="font-sans font-normal"> - the owner has been notified.</span>}
+            </p>
+          </CardContent>
+        </Card>
         <Button onClick={() => setClosed(null)}>Open a new shift</Button>
       </div>
     );
@@ -84,10 +96,18 @@ export default function CashShiftPage() {
   if (!shift) {
     return (
       <div className="max-w-sm space-y-4">
-        <h1 className="text-2xl font-semibold">Open a cash shift</h1>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <Wallet size={18} strokeWidth={2} className="text-primary" />
+          Open a cash shift
+        </h1>
+        {error && (
+          <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <TriangleAlert size={14} strokeWidth={2} />
+            {error}
+          </p>
+        )}
         <form onSubmit={open} className="space-y-3">
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Label htmlFor="opening-float">Opening float (NPR)</Label>
             <Input
               id="opening-float"
@@ -108,36 +128,49 @@ export default function CashShiftPage() {
 
   return (
     <div className="max-w-sm space-y-4">
-      <h1 className="text-2xl font-semibold">Close cash shift</h1>
-      <p className="text-sm opacity-60">
-        Opened with {formatNpr(shift.opening_float_npr, { symbol: true })}.
-      </p>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <form onSubmit={close} className="space-y-3">
-        <div className="space-y-2">
-          <Label>Count the drawer</Label>
-          {DENOMINATIONS.map((denom) => (
-            <div key={denom} className="flex items-center gap-2">
-              <span className="w-16 text-sm opacity-70">NPR {denom}</span>
-              <span className="opacity-50">×</span>
-              <Input
-                type="number"
-                min="0"
-                value={counts[denom] ?? ""}
-                onChange={(e) => setCounts((prev) => ({ ...prev, [denom]: e.target.value }))}
-                className="h-8 w-20"
-              />
-            </div>
-          ))}
-        </div>
-        <p className="text-sm font-medium">
-          Counted total: {formatNpr(countedTotal.toFixed(2), { symbol: true })}
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Close cash shift</h1>
+        <p className="font-dashboard-mono mt-0.5 text-sm text-muted-foreground">
+          Opened with {formatNpr(shift.opening_float_npr, { symbol: true })}.
         </p>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "..." : "Close shift"}
-        </Button>
-      </form>
+      </div>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
+
+      <Card>
+        <CardContent>
+          <form onSubmit={close} className="space-y-3">
+            <div className="space-y-2">
+              <Label>Count the drawer</Label>
+              {DENOMINATIONS.map((denom) => (
+                <div key={denom} className="flex items-center gap-2">
+                  <span className="font-dashboard-mono w-16 text-sm text-muted-foreground">
+                    NPR {denom}
+                  </span>
+                  <span className="text-muted-foreground">&times;</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={counts[denom] ?? ""}
+                    onChange={(e) => setCounts((prev) => ({ ...prev, [denom]: e.target.value }))}
+                    className="h-8 w-20"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="font-dashboard-mono border-t pt-3 text-sm font-medium">
+              Counted total: {formatNpr(countedTotal.toFixed(2), { symbol: true })}
+            </p>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "..." : "Close shift"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

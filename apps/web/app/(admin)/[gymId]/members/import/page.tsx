@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getImportJobStatus, importMembers, type ImportJob } from "@fitkhata/api-client";
+import { CircleCheck, FileSpreadsheet, Loader2, TriangleAlert, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function ImportMembersPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -42,49 +45,83 @@ export default function ImportMembersPage() {
 
   return (
     <div className="max-w-xl space-y-4">
-      <h1 className="text-2xl font-semibold">Import members</h1>
-      <p className="text-sm opacity-70">
-        Upload a CSV or XLSX file with columns: full_name, phone, gender, dob (YYYY-MM-DD), tags
-        (comma-separated), marketing_opt_in.
-      </p>
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Import members</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Upload a CSV or XLSX file with columns: full_name, phone, gender, dob (YYYY-MM-DD), tags
+          (comma-separated), marketing_opt_in.
+        </p>
+      </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
-      <form onSubmit={submit} className="flex items-center gap-2">
-        <input
-          type="file"
-          accept=".csv,.xlsx"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="text-sm"
-        />
-        <Button type="submit" disabled={!file || uploading}>
-          {uploading ? "Starting..." : "Import"}
-        </Button>
-      </form>
+      <Card>
+        <CardContent>
+          <form onSubmit={submit} className="flex flex-col gap-3">
+            <label
+              htmlFor="import-file"
+              className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-input px-4 py-5 text-sm transition-colors hover:border-ring hover:bg-muted/50"
+            >
+              <FileSpreadsheet size={20} strokeWidth={1.75} className="shrink-0 text-muted-foreground" />
+              <span className="text-foreground/80">
+                {file ? file.name : "Choose a CSV or XLSX file"}
+              </span>
+              <input
+                id="import-file"
+                type="file"
+                accept=".csv,.xlsx"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="sr-only"
+              />
+            </label>
+            <Button type="submit" disabled={!file || uploading} className="self-start">
+              {uploading ? (
+                <Loader2 size={15} strokeWidth={2} className="animate-spin" data-icon="inline-start" />
+              ) : (
+                <Upload size={15} strokeWidth={2} data-icon="inline-start" />
+              )}
+              {uploading ? "Starting..." : "Import"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {job && (
-        <div className="space-y-2 rounded border p-4 text-sm">
-          <p>
-            Status: <span className="font-medium">{job.status}</span>
-          </p>
-          {job.status === "done" && (
-            <>
-              <p>
-                {job.success_count} of {job.total_rows} rows imported successfully.
-              </p>
-              {job.error_report && (
-                <a
-                  href={job.error_report}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  Download error report
-                </a>
-              )}
-            </>
-          )}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Import status
+              <Badge variant={job.status === "failed" ? "destructive" : "secondary"}>
+                {job.status === "done" && <CircleCheck size={11} strokeWidth={2} data-icon="inline-start" />}
+                {job.status}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {job.status === "done" && (
+              <div className="space-y-2 text-sm">
+                <p className="font-dashboard-mono">
+                  {job.success_count} of {job.total_rows} rows imported successfully.
+                </p>
+                {job.error_report && (
+                  <a
+                    href={job.error_report}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Download error report
+                  </a>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

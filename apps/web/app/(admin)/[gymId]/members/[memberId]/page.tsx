@@ -20,10 +20,21 @@ import {
   type PaymentMode,
 } from "@fitkhata/api-client";
 import type { Invoice } from "@fitkhata/api-client";
+import { Check, FileText, MessageSquareText, Receipt, Wallet, X } from "lucide-react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import { formatNpr } from "@/lib/money";
 
@@ -33,6 +44,11 @@ const DESK_PAYMENT_MODES: { value: PaymentMode; label: string }[] = [
   { value: "bank", label: "Bank transfer" },
   { value: "cheque", label: "Cheque" },
 ];
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
 
 export default function MemberProfilePage() {
   const { memberId } = useParams<{ memberId: string }>();
@@ -64,7 +80,20 @@ export default function MemberProfilePage() {
     queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
   }
 
-  if (member.isLoading || !member.data) return <p className="text-sm opacity-60">Loading...</p>;
+  if (member.isLoading || !member.data) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+        </div>
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
+    );
+  }
 
   const m = member.data;
   const membershipList: Membership[] = Array.isArray(memberships.data)
@@ -86,159 +115,199 @@ export default function MemberProfilePage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{m.full_name}</h1>
-        <p className="text-sm opacity-60">
-          {m.member_code} · {m.phone}
-        </p>
-        <div className="mt-2 flex gap-2">
-          <Badge variant="secondary">{m.status}</Badge>
-          {m.risk_state !== "normal" && (
-            <Badge variant={m.risk_state === "red_list" ? "destructive" : "secondary"}>
-              {m.risk_state}
-            </Badge>
-          )}
-          {m.tags.map((tag) => (
-            <Badge key={tag} variant="outline">
-              {tag}
-            </Badge>
-          ))}
+      <div className="flex items-center gap-3">
+        <Avatar className="size-12">
+          <AvatarFallback className="bg-primary text-primary-foreground">
+            {initials(m.full_name)}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">{m.full_name}</h1>
+          <p className="font-dashboard-mono text-sm text-muted-foreground">
+            {m.member_code} · {m.phone}
+          </p>
         </div>
       </div>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Memberships</h2>
-        <ul className="space-y-1 text-sm">
-          {membershipList.map((ms) => (
-            <li key={ms.id} className="flex justify-between rounded border px-3 py-2">
-              <span>
-                {ms.start_date} → {ms.expiry_date}
-              </span>
-              <Badge variant="secondary">{ms.status}</Badge>
-            </li>
-          ))}
-          {membershipList.length === 0 && (
-            <li className="text-sm opacity-60">No memberships yet.</li>
-          )}
-        </ul>
-      </section>
+      <div className="flex flex-wrap gap-1.5">
+        <Badge variant="secondary">{m.status}</Badge>
+        {m.risk_state !== "normal" && (
+          <Badge variant={m.risk_state === "red_list" ? "destructive" : "secondary"}>
+            {m.risk_state}
+          </Badge>
+        )}
+        {m.tags.map((tag) => (
+          <Badge key={tag} variant="outline">
+            {tag}
+          </Badge>
+        ))}
+      </div>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Invoices &amp; dues</h2>
-        <ul className="space-y-2 text-sm">
-          {invoiceList.map((inv) => {
-            const pendingNotes = creditNoteList.filter(
-              (cn) => cn.invoice === inv.id && !cn.approved_by
-            );
-            const panelOpen = openPanel?.invoiceId === inv.id ? openPanel.kind : null;
-
-            return (
-              <li key={inv.id} className="rounded border px-3 py-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs">{inv.number}</span>
-                  <span>
-                    {formatNpr(inv.total_npr, { symbol: true })}{" "}
-                    <span className="opacity-60">({inv.status})</span>
-                  </span>
-                </div>
-
-                <div className="mt-2 flex flex-wrap gap-3 text-xs">
-                  <button
-                    className="text-blue-600 hover:underline"
-                    onClick={() => openPdf(inv.id)}
-                  >
-                    PDF
-                  </button>
-                  <button
-                    className="text-blue-600 hover:underline"
-                    onClick={() => sendReceiptSms(inv.id)}
-                  >
-                    SMS receipt
-                  </button>
-                  {inv.status === "draft" && (
-                    <button
-                      className="text-blue-600 hover:underline"
-                      onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "pay" })}
-                    >
-                      Collect payment
-                    </button>
-                  )}
-                  {inv.status === "issued" && (
-                    <button
-                      className="text-blue-600 hover:underline"
-                      onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "cn" })}
-                    >
-                      Request credit note
-                    </button>
-                  )}
-                  {isOwner && inv.status !== "void" && (
-                    <button
-                      className="text-red-600 hover:underline"
-                      onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "void" })}
-                    >
-                      Void
-                    </button>
-                  )}
-                </div>
-
-                {panelOpen === "pay" && (
-                  <CollectPaymentForm
-                    invoiceId={inv.id}
-                    defaultAmount={inv.total_npr}
-                    onDone={() => {
-                      setOpenPanel(null);
-                      invalidateInvoices();
-                    }}
-                    onCancel={() => setOpenPanel(null)}
-                  />
-                )}
-                {panelOpen === "void" && (
-                  <VoidForm
-                    invoiceId={inv.id}
-                    onDone={() => {
-                      setOpenPanel(null);
-                      invalidateInvoices();
-                    }}
-                    onCancel={() => setOpenPanel(null)}
-                  />
-                )}
-                {panelOpen === "cn" && (
-                  <CreditNoteForm
-                    invoiceId={inv.id}
-                    onDone={() => {
-                      setOpenPanel(null);
-                      invalidateInvoices();
-                    }}
-                    onCancel={() => setOpenPanel(null)}
-                  />
-                )}
-
-                {isOwner && pendingNotes.length > 0 && (
-                  <ul className="mt-2 space-y-1 border-t pt-2">
-                    {pendingNotes.map((cn) => (
-                      <li key={cn.id} className="flex items-center justify-between text-xs">
-                        <span>
-                          {formatNpr(cn.amount_npr, { symbol: true })} — {cn.reason}
-                        </span>
-                        <button
-                          className="text-green-700 hover:underline"
-                          onClick={async () => {
-                            await approveCreditNote(cn.id);
-                            invalidateInvoices();
-                          }}
-                        >
-                          Approve
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Memberships</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y">
+            {membershipList.map((ms) => (
+              <li key={ms.id} className="flex items-center justify-between py-2.5 text-sm">
+                <span className="font-dashboard-mono">
+                  {ms.start_date} &rarr; {ms.expiry_date}
+                </span>
+                <Badge variant="secondary">{ms.status}</Badge>
               </li>
-            );
-          })}
-          {invoiceList.length === 0 && <li className="text-sm opacity-60">No invoices yet.</li>}
-        </ul>
-      </section>
+            ))}
+            {membershipList.length === 0 && (
+              <li className="py-2.5 text-sm text-muted-foreground">No memberships yet.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Invoices &amp; dues</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y">
+            {invoiceList.map((inv) => {
+              const pendingNotes = creditNoteList.filter(
+                (cn) => cn.invoice === inv.id && !cn.approved_by
+              );
+              const panelOpen = openPanel?.invoiceId === inv.id ? openPanel.kind : null;
+
+              return (
+                <li key={inv.id} className="py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-dashboard-mono text-xs text-muted-foreground">
+                      {inv.number}
+                    </span>
+                    <span className="font-dashboard-mono text-sm font-medium">
+                      {formatNpr(inv.total_npr, { symbol: true })}{" "}
+                      <span className="font-sans font-normal text-muted-foreground">
+                        ({inv.status})
+                      </span>
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => openPdf(inv.id)}
+                    >
+                      <FileText size={13} strokeWidth={2} data-icon="inline-start" />
+                      PDF
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => sendReceiptSms(inv.id)}
+                    >
+                      <MessageSquareText size={13} strokeWidth={2} data-icon="inline-start" />
+                      SMS receipt
+                    </Button>
+                    {inv.status === "draft" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary hover:text-primary"
+                        onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "pay" })}
+                      >
+                        <Wallet size={13} strokeWidth={2} data-icon="inline-start" />
+                        Collect payment
+                      </Button>
+                    )}
+                    {inv.status === "issued" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary hover:text-primary"
+                        onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "cn" })}
+                      >
+                        <Receipt size={13} strokeWidth={2} data-icon="inline-start" />
+                        Request credit note
+                      </Button>
+                    )}
+                    {isOwner && inv.status !== "void" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "void" })}
+                      >
+                        <X size={13} strokeWidth={2} data-icon="inline-start" />
+                        Void
+                      </Button>
+                    )}
+                  </div>
+
+                  {panelOpen === "pay" && (
+                    <CollectPaymentForm
+                      invoiceId={inv.id}
+                      defaultAmount={inv.total_npr}
+                      onDone={() => {
+                        setOpenPanel(null);
+                        invalidateInvoices();
+                      }}
+                      onCancel={() => setOpenPanel(null)}
+                    />
+                  )}
+                  {panelOpen === "void" && (
+                    <VoidForm
+                      invoiceId={inv.id}
+                      onDone={() => {
+                        setOpenPanel(null);
+                        invalidateInvoices();
+                      }}
+                      onCancel={() => setOpenPanel(null)}
+                    />
+                  )}
+                  {panelOpen === "cn" && (
+                    <CreditNoteForm
+                      invoiceId={inv.id}
+                      onDone={() => {
+                        setOpenPanel(null);
+                        invalidateInvoices();
+                      }}
+                      onCancel={() => setOpenPanel(null)}
+                    />
+                  )}
+
+                  {isOwner && pendingNotes.length > 0 && (
+                    <ul className="mt-2 space-y-1 border-t pt-2">
+                      {pendingNotes.map((cn) => (
+                        <li key={cn.id} className="flex items-center justify-between text-xs">
+                          <span>
+                            {formatNpr(cn.amount_npr, { symbol: true })} - {cn.reason}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs text-accent hover:text-accent"
+                            onClick={async () => {
+                              await approveCreditNote(cn.id);
+                              invalidateInvoices();
+                            }}
+                          >
+                            <Check size={12} strokeWidth={2} data-icon="inline-start" />
+                            Approve
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+            {invoiceList.length === 0 && (
+              <li className="py-2.5 text-sm text-muted-foreground">No invoices yet.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -277,19 +346,20 @@ function CollectPaymentForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2">
-      {error && <p className="w-full text-xs text-red-600">{error}</p>}
-      <select
-        value={mode}
-        onChange={(e) => setMode(e.target.value as PaymentMode)}
-        className="h-8 rounded border px-2 text-xs"
-      >
-        {DESK_PAYMENT_MODES.map((m) => (
-          <option key={m.value} value={m.value}>
-            {m.label}
-          </option>
-        ))}
-      </select>
+    <form onSubmit={submit} className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2.5">
+      {error && <p className="w-full text-xs text-destructive">{error}</p>}
+      <Select value={mode} onValueChange={(v) => setMode(v as PaymentMode)}>
+        <SelectTrigger className="h-8 w-36 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {DESK_PAYMENT_MODES.map((m) => (
+            <SelectItem key={m.value} value={m.value}>
+              {m.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Input
         type="number"
         step="0.01"
@@ -301,9 +371,9 @@ function CollectPaymentForm({
       <Button type="submit" size="sm" disabled={submitting}>
         {submitting ? "..." : "Confirm"}
       </Button>
-      <button type="button" className="text-xs opacity-60 hover:underline" onClick={onCancel}>
+      <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onCancel}>
         Cancel
-      </button>
+      </Button>
     </form>
   );
 }
@@ -335,8 +405,8 @@ function VoidForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2">
-      {error && <p className="w-full text-xs text-red-600">{error}</p>}
+    <form onSubmit={submit} className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2.5">
+      {error && <p className="w-full text-xs text-destructive">{error}</p>}
       <Input
         placeholder="Reason for voiding"
         value={reason}
@@ -347,9 +417,9 @@ function VoidForm({
       <Button type="submit" size="sm" variant="destructive" disabled={submitting}>
         {submitting ? "..." : "Void"}
       </Button>
-      <button type="button" className="text-xs opacity-60 hover:underline" onClick={onCancel}>
+      <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onCancel}>
         Cancel
-      </button>
+      </Button>
     </form>
   );
 }
@@ -382,8 +452,8 @@ function CreditNoteForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2">
-      {error && <p className="w-full text-xs text-red-600">{error}</p>}
+    <form onSubmit={submit} className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2.5">
+      {error && <p className="w-full text-xs text-destructive">{error}</p>}
       <Input
         type="number"
         step="0.01"
@@ -403,9 +473,9 @@ function CreditNoteForm({
       <Button type="submit" size="sm" disabled={submitting}>
         {submitting ? "..." : "Submit for approval"}
       </Button>
-      <button type="button" className="text-xs opacity-60 hover:underline" onClick={onCancel}>
+      <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onCancel}>
         Cancel
-      </button>
+      </Button>
     </form>
   );
 }

@@ -3,10 +3,19 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createAddOn, createPlan, listAddOns, listPlans } from "@fitkhata/api-client";
+import { PackagePlus, Ticket } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatNpr } from "@/lib/money";
 
 export default function PlansSettingsPage() {
@@ -65,106 +74,139 @@ export default function PlansSettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-8">
-      <h1 className="text-2xl font-semibold">Plans &amp; add-ons</h1>
+    <div className="max-w-2xl space-y-6">
+      <h1 className="text-xl font-semibold tracking-tight">Plans &amp; add-ons</h1>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Membership plans</h2>
-        <ul className="space-y-1 text-sm">
-          {plans.data?.map((p) => (
-            <li key={p.id} className="flex justify-between rounded border px-3 py-2">
-              <span>{p.name}</span>
-              <span className="opacity-60">
-                {formatNpr(p.price_npr, { symbol: true })} / {p.duration_days}d
-              </span>
-            </li>
-          ))}
-        </ul>
-        {planError && <p className="text-sm text-red-600">{planError}</p>}
-        <form onSubmit={submitPlan} className="flex flex-wrap items-end gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="plan-name">Name</Label>
-            <Input id="plan-name" value={planName} onChange={(e) => setPlanName(e.target.value)} required />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="plan-days">Duration (days)</Label>
-            <Input
-              id="plan-days"
-              type="number"
-              value={planDays}
-              onChange={(e) => setPlanDays(e.target.value)}
-              className="w-28"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="plan-price">Price (NPR)</Label>
-            <Input
-              id="plan-price"
-              type="number"
-              step="0.01"
-              value={planPrice}
-              onChange={(e) => setPlanPrice(e.target.value)}
-              className="w-32"
-              required
-            />
-          </div>
-          <Button type="submit">Add plan</Button>
-        </form>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Ticket size={16} strokeWidth={2} className="text-primary" />
+            Membership plans
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ul className="divide-y">
+            {plans.data?.map((p) => (
+              <li key={p.id} className="flex items-center justify-between py-2 text-sm">
+                <span>{p.name}</span>
+                <span className="font-dashboard-mono text-muted-foreground">
+                  {formatNpr(p.price_npr, { symbol: true })} / {p.duration_days}d
+                </span>
+              </li>
+            ))}
+            {plans.data?.length === 0 && (
+              <li className="py-2 text-sm text-muted-foreground">No plans yet.</li>
+            )}
+          </ul>
+          {planError && <p className="text-sm text-destructive">{planError}</p>}
+          <form onSubmit={submitPlan} className="flex flex-wrap items-end gap-2 border-t pt-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-name">Name</Label>
+              <Input
+                id="plan-name"
+                value={planName}
+                onChange={(e) => setPlanName(e.target.value)}
+                className="h-8"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-days">Duration (days)</Label>
+              <Input
+                id="plan-days"
+                type="number"
+                value={planDays}
+                onChange={(e) => setPlanDays(e.target.value)}
+                className="h-8 w-28"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-price">Price (NPR)</Label>
+              <Input
+                id="plan-price"
+                type="number"
+                step="0.01"
+                value={planPrice}
+                onChange={(e) => setPlanPrice(e.target.value)}
+                className="h-8 w-32"
+                required
+              />
+            </div>
+            <Button type="submit" size="sm">
+              Add plan
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Add-ons</h2>
-        <ul className="space-y-1 text-sm">
-          {addons.data?.map((a) => (
-            <li key={a.id} className="flex justify-between rounded border px-3 py-2">
-              <span>
-                {a.name} <span className="opacity-60">({a.kind})</span>
-              </span>
-              <span className="opacity-60">{formatNpr(a.price_npr, { symbol: true })}</span>
-            </li>
-          ))}
-        </ul>
-        {addonError && <p className="text-sm text-red-600">{addonError}</p>}
-        <form onSubmit={submitAddon} className="flex flex-wrap items-end gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="addon-name">Name</Label>
-            <Input
-              id="addon-name"
-              value={addonName}
-              onChange={(e) => setAddonName(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="addon-price">Price (NPR)</Label>
-            <Input
-              id="addon-price"
-              type="number"
-              step="0.01"
-              value={addonPrice}
-              onChange={(e) => setAddonPrice(e.target.value)}
-              className="w-32"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="addon-kind">Kind</Label>
-            <select
-              id="addon-kind"
-              value={addonKind}
-              onChange={(e) => setAddonKind(e.target.value)}
-              className="h-8 rounded border px-2 text-sm"
-            >
-              <option value="locker">Locker</option>
-              <option value="towel">Towel</option>
-              <option value="pt">Personal training</option>
-              <option value="diet">Diet plan</option>
-            </select>
-          </div>
-          <Button type="submit">Add add-on</Button>
-        </form>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PackagePlus size={16} strokeWidth={2} className="text-primary" />
+            Add-ons
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ul className="divide-y">
+            {addons.data?.map((a) => (
+              <li key={a.id} className="flex items-center justify-between py-2 text-sm">
+                <span>
+                  {a.name} <span className="text-muted-foreground">({a.kind})</span>
+                </span>
+                <span className="font-dashboard-mono text-muted-foreground">
+                  {formatNpr(a.price_npr, { symbol: true })}
+                </span>
+              </li>
+            ))}
+            {addons.data?.length === 0 && (
+              <li className="py-2 text-sm text-muted-foreground">No add-ons yet.</li>
+            )}
+          </ul>
+          {addonError && <p className="text-sm text-destructive">{addonError}</p>}
+          <form onSubmit={submitAddon} className="flex flex-wrap items-end gap-2 border-t pt-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="addon-name">Name</Label>
+              <Input
+                id="addon-name"
+                value={addonName}
+                onChange={(e) => setAddonName(e.target.value)}
+                className="h-8"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="addon-price">Price (NPR)</Label>
+              <Input
+                id="addon-price"
+                type="number"
+                step="0.01"
+                value={addonPrice}
+                onChange={(e) => setAddonPrice(e.target.value)}
+                className="h-8 w-32"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="addon-kind">Kind</Label>
+              <Select value={addonKind} onValueChange={setAddonKind}>
+                <SelectTrigger id="addon-kind" className="h-8 w-40 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="locker">Locker</SelectItem>
+                  <SelectItem value="towel">Towel</SelectItem>
+                  <SelectItem value="pt">Personal training</SelectItem>
+                  <SelectItem value="diet">Diet plan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" size="sm">
+              Add add-on
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

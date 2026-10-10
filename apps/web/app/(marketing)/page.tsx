@@ -1,11 +1,17 @@
-import { useTranslations } from "next-intl";
+import { MarketingHero } from "@/components/marketing/hero";
+import { MarketingFeatures } from "@/components/marketing/features";
+import { MarketingCredibility } from "@/components/marketing/credibility";
+import { MarketingPricing } from "@/components/marketing/pricing";
+import { MarketingCtaBand } from "@/components/marketing/cta-band";
 
 export default function MarketingHomePage() {
-  const t = useTranslations("marketing");
   return (
-    <div>
-      <h1 className="text-4xl font-bold">{t("heroTitle")}</h1>
-      <p className="mt-4 text-lg opacity-80">{t("heroSubtitle")}</p>
-    </div>
+    <>
+      <MarketingHero />
+      <MarketingFeatures />
+      <MarketingCredibility />
+      <MarketingPricing />
+      <MarketingCtaBand />
+    </>
   );
 }

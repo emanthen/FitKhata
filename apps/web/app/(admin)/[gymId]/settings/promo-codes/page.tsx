@@ -3,10 +3,19 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPromoCode, listPromoCodes } from "@fitkhata/api-client";
+import { Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatNpr } from "@/lib/money";
 
 export default function PromoCodesSettingsPage() {
@@ -45,78 +54,96 @@ export default function PromoCodesSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-4">
-      <h1 className="text-2xl font-semibold">Promo codes</h1>
+      <h1 className="text-xl font-semibold tracking-tight">Promo codes</h1>
 
-      <ul className="space-y-1 text-sm">
-        {promoCodes.data?.map((p) => (
-          <li key={p.id} className="flex justify-between rounded border px-3 py-2">
-            <span className="font-mono">{p.code}</span>
-            <span className="opacity-60">
-              {p.kind === "flat" ? `${formatNpr(p.value, { symbol: true })} off` : `${p.value}% off`} ·{" "}
-              used {p.times_used}
-              {p.usage_limit ? `/${p.usage_limit}` : ""}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tag size={16} strokeWidth={2} className="text-primary" />
+            Active codes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ul className="divide-y">
+            {promoCodes.data?.map((p) => (
+              <li key={p.id} className="flex items-center justify-between py-2 text-sm">
+                <span className="font-dashboard-mono">{p.code}</span>
+                <span className="text-muted-foreground">
+                  {p.kind === "flat" ? `${formatNpr(p.value, { symbol: true })} off` : `${p.value}% off`}{" "}
+                  &middot; used {p.times_used}
+                  {p.usage_limit ? `/${p.usage_limit}` : ""}
+                </span>
+              </li>
+            ))}
+            {promoCodes.data?.length === 0 && (
+              <li className="py-2 text-sm text-muted-foreground">No promo codes yet.</li>
+            )}
+          </ul>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <form onSubmit={submit} className="flex flex-wrap items-end gap-2">
-        <div className="space-y-1">
-          <Label htmlFor="promo-code">Code</Label>
-          <Input
-            id="promo-code"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="promo-kind">Kind</Label>
-          <select
-            id="promo-kind"
-            value={kind}
-            onChange={(e) => setKind(e.target.value as "flat" | "percent")}
-            className="h-8 rounded border px-2 text-sm"
-          >
-            <option value="flat">Flat (NPR)</option>
-            <option value="percent">Percent</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="promo-value">Value</Label>
-          <Input
-            id="promo-value"
-            type="number"
-            step="0.01"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-28"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="promo-from">Valid from</Label>
-          <Input
-            id="promo-from"
-            type="date"
-            value={validFrom}
-            onChange={(e) => setValidFrom(e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="promo-to">Valid to</Label>
-          <Input
-            id="promo-to"
-            type="date"
-            value={validTo}
-            onChange={(e) => setValidTo(e.target.value)}
-            required
-          />
-        </div>
-        <Button type="submit">Add promo code</Button>
-      </form>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-2 border-t pt-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="promo-code">Code</Label>
+              <Input
+                id="promo-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                className="h-8"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="promo-kind">Kind</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as "flat" | "percent")}>
+                <SelectTrigger id="promo-kind" className="h-8 w-36 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat (NPR)</SelectItem>
+                  <SelectItem value="percent">Percent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="promo-value">Value</Label>
+              <Input
+                id="promo-value"
+                type="number"
+                step="0.01"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="h-8 w-28"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="promo-from">Valid from</Label>
+              <Input
+                id="promo-from"
+                type="date"
+                value={validFrom}
+                onChange={(e) => setValidFrom(e.target.value)}
+                className="h-8"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="promo-to">Valid to</Label>
+              <Input
+                id="promo-to"
+                type="date"
+                value={validTo}
+                onChange={(e) => setValidTo(e.target.value)}
+                className="h-8"
+                required
+              />
+            </div>
+            <Button type="submit" size="sm">
+              Add promo code
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

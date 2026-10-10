@@ -23,7 +23,7 @@ export function BranchSwitcher({ activeGymId }: { activeGymId: string }) {
 
   return (
     <select
-      className="rounded border px-2 py-1 text-sm"
+      className="border-input bg-background w-full rounded-md border px-2.5 py-1.5 text-sm font-medium"
       value={activeGymId}
       onChange={(e) => switchTo(e.target.value)}
     >

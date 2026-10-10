@@ -11,10 +11,19 @@ import {
   type MembershipFreeze,
 } from "@fitkhata/api-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Snowflake, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const REASONS: { value: FreezeReason; label: string }[] = [
   { value: "dashain", label: "Dashain" },
@@ -94,11 +103,14 @@ export default function FreezeWizardPage() {
   const batches = groupByBatch(history.data ?? []);
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-2xl space-y-6">
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Festival freeze wizard</h1>
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <Snowflake size={18} strokeWidth={2} className="text-primary" />
+          Festival freeze wizard
+        </h1>
         <form onSubmit={runPreview} className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Label htmlFor="freeze-start">Start date</Label>
             <Input
               id="freeze-start"
@@ -109,10 +121,10 @@ export default function FreezeWizardPage() {
                 inputsChangedSincePreview();
               }}
               required
-              className="w-40"
+              className="h-8 w-40"
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Label htmlFor="freeze-end">End date</Label>
             <Input
               id="freeze-end"
@@ -123,85 +135,101 @@ export default function FreezeWizardPage() {
                 inputsChangedSincePreview();
               }}
               required
-              className="w-40"
+              className="h-8 w-40"
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Label htmlFor="freeze-reason">Reason</Label>
-            <select
-              id="freeze-reason"
-              className="h-9 w-36 rounded border px-2 text-sm"
+            <Select
               value={reason}
-              onChange={(e) => {
-                setReason(e.target.value as FreezeReason);
+              onValueChange={(v) => {
+                setReason(v as FreezeReason);
                 inputsChangedSincePreview();
               }}
             >
-              {REASONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="freeze-reason" className="h-8 w-36 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {REASONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Button type="submit">Preview</Button>
+          <Button type="submit" size="sm">
+            Preview
+          </Button>
         </form>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <TriangleAlert size={14} strokeWidth={2} />
+            {error}
+          </p>
+        )}
 
         {preview && (
-          <div className="space-y-2 rounded border p-3">
-            <p className="text-sm font-medium">
-              {preview.count} active membership{preview.count === 1 ? "" : "s"} will be frozen.
-            </p>
-            <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
-              {preview.rows.map((row) => (
-                <li key={row.membership_id} className="flex justify-between">
-                  <span>
-                    {row.member_name}
-                    {row.would_exceed_max && (
-                      <span className="ml-1 text-amber-600">(exceeds max freeze days)</span>
-                    )}
-                  </span>
-                  <span className="opacity-70">
-                    {row.previous_expiry} &rarr; {row.new_expiry}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <Button onClick={confirm} disabled={confirming}>
-              {confirming ? "..." : "Confirm freeze"}
-            </Button>
-          </div>
+          <Card>
+            <CardContent className="space-y-2">
+              <p className="text-sm font-medium">
+                {preview.count} active membership{preview.count === 1 ? "" : "s"} will be frozen.
+              </p>
+              <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
+                {preview.rows.map((row) => (
+                  <li key={row.membership_id} className="flex justify-between">
+                    <span>
+                      {row.member_name}
+                      {row.would_exceed_max && (
+                        <span className="ml-1 text-accent">(exceeds max freeze days)</span>
+                      )}
+                    </span>
+                    <span className="font-dashboard-mono text-muted-foreground">
+                      {row.previous_expiry} &rarr; {row.new_expiry}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <Button onClick={confirm} disabled={confirming} size="sm">
+                {confirming ? "..." : "Confirm freeze"}
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </div>
 
-      <div className="space-y-2">
-        <h2 className="text-lg font-medium">Freeze history</h2>
-        <ul className="space-y-2">
-          {Array.from(batches.entries()).map(([batchId, freezes]) => {
-            const allReverted = freezes.every((f) => f.reverted_at);
-            return (
-              <li key={batchId} className="rounded border p-3 text-sm">
-                <div className="flex items-center justify-between">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-muted-foreground">Freeze history</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y">
+            {Array.from(batches.entries()).map(([batchId, freezes]) => {
+              const allReverted = freezes.every((f) => f.reverted_at);
+              return (
+                <li key={batchId} className="flex items-center justify-between py-2.5 text-sm">
                   <span className="font-medium">
                     {freezes[0].reason} &middot; {freezes.length} membership
                     {freezes.length === 1 ? "" : "s"} &middot; {freezes[0].start_date} to{" "}
                     {freezes[0].end_date}
                   </span>
                   {!allReverted && (
-                    <Button variant="outline" onClick={() => undo(batchId)} className="h-7 text-xs">
+                    <Button variant="outline" size="sm" onClick={() => undo(batchId)} className="h-7 text-xs">
                       Undo
                     </Button>
                   )}
-                  {allReverted && <span className="text-xs opacity-60">Reverted</span>}
-                </div>
-              </li>
-            );
-          })}
-          {batches.size === 0 && <li className="text-sm opacity-60">No freezes yet.</li>}
-        </ul>
-      </div>
+                  {allReverted && <span className="text-xs text-muted-foreground">Reverted</span>}
+                </li>
+              );
+            })}
+            {batches.size === 0 && (
+              <li className="py-2.5 text-sm text-muted-foreground">No freezes yet.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

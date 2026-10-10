@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  getPlanMix,
-  getRevenueTrend,
-  listPlans,
-  type Plan,
-} from "@fitkhata/api-client";
+import { getPlanMix, getRevenueTrend, listPlans, type Plan } from "@fitkhata/api-client";
 import {
   Bar,
   BarChart,
@@ -20,13 +15,22 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ChartColumn } from "lucide-react";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ReportsTabs } from "@/components/reports/reports-tabs";
 import { formatNpr } from "@/lib/money";
 
-const COLORS = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2"];
+const CHART_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -66,57 +70,70 @@ export default function ReportsOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Reports</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <ChartColumn size={18} strokeWidth={2} className="text-primary" />
+        Reports
+      </h1>
       <ReportsTabs />
 
-      <div className="flex items-end gap-4">
-        <div className="space-y-1">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-1.5">
           <Label htmlFor="from">From</Label>
-          <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-8" />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <Label htmlFor="to">To</Label>
-          <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8" />
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded border p-4">
-          <h2 className="mb-3 text-sm font-medium opacity-70">Revenue trend</h2>
-          {trend.isLoading ? (
-            <p className="text-sm opacity-60">Loading...</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" fontSize={11} />
-                <YAxis fontSize={11} />
-                <Tooltip formatter={(value) => formatNpr(Number(value ?? 0), { symbol: true })} />
-                <Bar dataKey="amount" fill="#2563eb" />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Revenue trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trend.isLoading ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="day" fontSize={11} stroke="var(--muted-foreground)" />
+                  <YAxis fontSize={11} stroke="var(--muted-foreground)" />
+                  <Tooltip formatter={(value) => formatNpr(Number(value ?? 0), { symbol: true })} />
+                  <Bar dataKey="amount" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
 
-        <div className="rounded border p-4">
-          <h2 className="mb-3 text-sm font-medium opacity-70">Plan mix</h2>
-          {mix.isLoading ? (
-            <p className="text-sm opacity-60">Loading...</p>
-          ) : mixData.length === 0 ? (
-            <p className="text-sm opacity-60">No revenue in this range.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={mixData} dataKey="amount" nameKey="name" label={(e) => e.name}>
-                  {mixData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => formatNpr(Number(value ?? 0), { symbol: true })} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Plan mix</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {mix.isLoading ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : mixData.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                No revenue in this range.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie data={mixData} dataKey="amount" nameKey="name" label={(e) => e.name}>
+                    {mixData.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatNpr(Number(value ?? 0), { symbol: true })} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

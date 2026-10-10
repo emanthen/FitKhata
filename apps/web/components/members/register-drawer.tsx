@@ -14,6 +14,7 @@ import {
 import { adIsoToBsLabel } from "@/lib/bs-calendar";
 import { formatNpr } from "@/lib/money";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -117,7 +118,7 @@ export function RegisterDrawer({
               <SheetDescription>Phone first — we&apos;ll check for an existing member.</SheetDescription>
             </SheetHeader>
             <form onSubmit={submitRegistration} className="space-y-4 px-4">
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Phone</Label>
@@ -129,7 +130,7 @@ export function RegisterDrawer({
                   required
                 />
                 {existingMember && (
-                  <p className="text-sm text-amber-600">
+                  <p className="text-sm text-accent">
                     {existingMember.full_name} is already registered ({existingMember.member_code}).
                     Close this drawer and sell them a plan from their profile instead.
                   </p>
@@ -174,10 +175,9 @@ export function RegisterDrawer({
               </div>
 
               <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={marketingOptIn}
-                  onChange={(e) => setMarketingOptIn(e.target.checked)}
+                  onCheckedChange={(checked) => setMarketingOptIn(checked === true)}
                 />
                 OK to send marketing messages
               </label>

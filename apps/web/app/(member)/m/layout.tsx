@@ -11,10 +11,12 @@ export const metadata: Metadata = {
 
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto max-w-md px-4 py-8">
-      <AnnouncementBanner />
-      {children}
-      <UpdateToast />
-    </main>
+    <div className="surface-pwa font-pwa min-h-[100dvh]">
+      <main className="mx-auto max-w-md px-4 py-8">
+        <AnnouncementBanner />
+        {children}
+        <UpdateToast />
+      </main>
+    </div>
   );
 }

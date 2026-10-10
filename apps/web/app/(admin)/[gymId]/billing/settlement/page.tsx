@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSettlementReport } from "@fitkhata/api-client";
+import { Receipt } from "lucide-react";
 
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatNpr } from "@/lib/money";
 
 function today(): string {
@@ -31,9 +34,12 @@ export default function SettlementReportPage() {
 
   return (
     <div className="max-w-md space-y-4">
-      <h1 className="text-2xl font-semibold">Daily settlement</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <Receipt size={18} strokeWidth={2} className="text-primary" />
+        Daily settlement
+      </h1>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <Label htmlFor="report-date">Date</Label>
         <Input
           id="report-date"
@@ -44,27 +50,41 @@ export default function SettlementReportPage() {
         />
       </div>
 
-      {report.isLoading && <p className="text-sm opacity-60">Loading...</p>}
+      <Card>
+        <CardContent>
+          {report.isLoading && (
+            <div className="space-y-2">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          )}
 
-      {report.data && (
-        <div className="space-y-2">
-          <ul className="space-y-1 text-sm">
-            {Object.entries(report.data.by_mode).map(([mode, amount]) => (
-              <li key={mode} className="flex justify-between rounded border px-3 py-2">
-                <span>{MODE_LABELS[mode] ?? mode}</span>
-                <span>{formatNpr(amount, { symbol: true })}</span>
-              </li>
-            ))}
-            {Object.keys(report.data.by_mode).length === 0 && (
-              <li className="text-sm opacity-60">No payments collected on this date.</li>
-            )}
-          </ul>
-          <div className="flex justify-between border-t pt-2 text-base font-semibold">
-            <span>Total</span>
-            <span>{formatNpr(report.data.total_npr, { symbol: true })}</span>
-          </div>
-        </div>
-      )}
+          {report.data && (
+            <div className="space-y-2">
+              <ul className="divide-y">
+                {Object.entries(report.data.by_mode).map(([mode, amount]) => (
+                  <li key={mode} className="flex items-center justify-between py-2 text-sm">
+                    <span>{MODE_LABELS[mode] ?? mode}</span>
+                    <span className="font-dashboard-mono">{formatNpr(amount, { symbol: true })}</span>
+                  </li>
+                ))}
+                {Object.keys(report.data.by_mode).length === 0 && (
+                  <li className="py-2 text-sm text-muted-foreground">
+                    No payments collected on this date.
+                  </li>
+                )}
+              </ul>
+              <div className="flex items-center justify-between border-t pt-3 text-base font-semibold">
+                <span>Total</span>
+                <span className="font-dashboard-mono">
+                  {formatNpr(report.data.total_npr, { symbol: true })}
+                </span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { listMembers, type Member, type Page } from "@fitkhata/api-client";
+import { Search, UserPlus, UserRoundX, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RegisterDrawer } from "@/components/members/register-drawer";
 
 function useDebounced<T>(value: T, delayMs: number): T {
@@ -74,22 +76,35 @@ export default function MembersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Members</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Members</h1>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/${gymId}/members/import`}>Import</Link>
+            <Link href={`/${gymId}/members/import`}>
+              <Upload size={15} strokeWidth={2} data-icon="inline-start" />
+              Import
+            </Link>
           </Button>
-          <Button onClick={() => setDrawerOpen(true)}>Register member</Button>
+          <Button onClick={() => setDrawerOpen(true)}>
+            <UserPlus size={15} strokeWidth={2} data-icon="inline-start" />
+            Register member
+          </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Input
-          placeholder="Search by name, phone, or member code..."
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className="max-w-xs"
-        />
+        <div className="relative max-w-xs flex-1">
+          <Search
+            size={14}
+            strokeWidth={2}
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            placeholder="Search by name, phone, or member code..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="pl-8"
+          />
+        </div>
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Status" />
@@ -130,15 +145,23 @@ export default function MembersPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
+          {(searching ? searchQuery.isLoading : browseQuery.isLoading) &&
+            Array.from({ length: 6 }).map((_, i) => (
+              <TableRow key={`skeleton-${i}`}>
+                <TableCell colSpan={5}>
+                  <Skeleton className="h-5 w-full" />
+                </TableCell>
+              </TableRow>
+            ))}
           {members.map((m) => (
             <TableRow key={m.id}>
-              <TableCell className="font-mono text-xs">{m.member_code}</TableCell>
+              <TableCell className="font-dashboard-mono text-xs">{m.member_code}</TableCell>
               <TableCell>
-                <Link href={`/${gymId}/members/${m.id}`} className="hover:underline">
+                <Link href={`/${gymId}/members/${m.id}`} className="font-medium hover:underline">
                   {m.full_name}
                 </Link>
               </TableCell>
-              <TableCell>{m.phone}</TableCell>
+              <TableCell className="font-dashboard-mono text-sm">{m.phone}</TableCell>
               <TableCell>
                 <Badge variant="secondary">{m.status}</Badge>
               </TableCell>
@@ -151,10 +174,13 @@ export default function MembersPage() {
               </TableCell>
             </TableRow>
           ))}
-          {members.length === 0 && (
+          {members.length === 0 && !(searching ? searchQuery.isLoading : browseQuery.isLoading) && (
             <TableRow>
-              <TableCell colSpan={5} className="py-8 text-center text-sm opacity-60">
-                No members found.
+              <TableCell colSpan={5} className="py-12 text-center">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <UserRoundX size={22} strokeWidth={1.75} />
+                  <p className="text-sm">No members found.</p>
+                </div>
               </TableCell>
             </TableRow>
           )}
