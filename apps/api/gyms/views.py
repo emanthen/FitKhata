@@ -17,6 +17,7 @@ from accounts.models import StaffRole
 from accounts.permissions import IsOwner
 from core.context import system_context
 from gyms.serializers import GymSerializer, OrganizationSerializer
+from saas.services import start_trial
 
 
 class OrganizationCreateView(APIView):
@@ -31,6 +32,7 @@ class OrganizationCreateView(APIView):
             StaffRole.objects.create(
                 user=request.user, org=org, gym=None, role=StaffRole.Role.OWNER
             )
+            start_trial(org)
         return Response(OrganizationSerializer(org).data, status=status.HTTP_201_CREATED)
 
 

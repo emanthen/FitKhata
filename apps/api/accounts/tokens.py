@@ -51,6 +51,7 @@ def issue_tokens_for_user(user: User, request: HttpRequest | None = None) -> dic
     refresh["org_id"] = org_id
     refresh["gym_ids"] = gym_ids
     refresh["role"] = role
+    refresh["is_platform_staff"] = user.is_staff
 
     DeviceSession.objects.create(
         user=user,
@@ -61,7 +62,9 @@ def issue_tokens_for_user(user: User, request: HttpRequest | None = None) -> dic
 
     # django-otp's reverse accessor isn't in django-stubs' User model shape.
     has_totp = user.totpdevice_set.filter(confirmed=True).exists()  # type: ignore[attr-defined]
-    requires_totp_setup = role == "owner" and not has_totp
+    # Platform staff (saas.permissions.IsPlatformStaff) need 2FA just as
+    # much as a gym owner does — same enforcement path, no new plumbing.
+    requires_totp_setup = (role == "owner" or user.is_staff) and not has_totp
 
     return {
         "access": str(refresh.access_token),

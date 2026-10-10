@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VAT sales register {{ fiscal_year }}</title>
+<style>
+  @page { size: A4 landscape; margin: 16mm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9pt; color: #1a1a1a; }
+  h1 { font-size: 14pt; margin: 0 0 4mm; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 1.5mm; border-bottom: 0.5pt solid #ccc; text-align: left; }
+  th { text-transform: uppercase; font-size: 7.5pt; color: #555; border-bottom: 1pt solid #999; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<h1>{{ gym.name }} &middot; VAT sales register &middot; FY {{ fiscal_year }}</h1>
+<table>
+  <thead>
+    <tr>
+      <th>Bill date (BS)</th><th>Bill no.</th><th>Buyer name</th><th>Buyer PAN</th>
+      <th class="num">Taxable</th><th class="num">VAT</th><th class="num">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.bill_date_bs }}</td>
+      <td>{{ row.number }}</td>
+      <td>{{ row.buyer_name }}</td>
+      <td>{{ row.buyer_pan }}</td>
+      <td class="num">{{ row.taxable_npr }}</td>
+      <td class="num">{{ row.vat_npr }}</td>
+      <td class="num">{{ row.total_npr }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</body>
+</html>

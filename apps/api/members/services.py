@@ -38,6 +38,10 @@ def register_member(gym: Any, actor: Any = None, **fields: Any) -> Member:
     """Allocates the next member_code under a row lock so concurrent
     registrations at the same gym never collide or leave a gap.
     """
+    from saas.services import check_member_limit
+
+    check_member_limit(gym)  # FR-11.2 — raises MemberLimitExceeded, the view maps it to 402
+
     with transaction.atomic():
         counter, _ = MemberCodeCounter.objects.select_for_update().get_or_create(
             org=gym.org, gym=gym

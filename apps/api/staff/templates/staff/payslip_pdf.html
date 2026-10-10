@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ labels.title }} {{ run.period_bs }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font-family: "Noto Sans Devanagari", "DejaVu Sans", Arial, sans-serif; font-size: 10.5pt; color: #1a1a1a; }
+  h1 { font-size: 15pt; margin: 0 0 2mm; letter-spacing: 0.03em; }
+  .muted { color: #555; }
+  .header { display: flex; justify-content: space-between; border-bottom: 1.2pt solid #1a1a1a; padding-bottom: 4mm; margin-bottom: 6mm; }
+  .header .meta { text-align: right; font-size: 9.5pt; }
+  .label { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.05em; color: #777; margin-bottom: 1mm; }
+  table.totals { width: 100%; border-collapse: collapse; margin-top: 6mm; }
+  table.totals td { padding: 1.8mm 0; font-variant-numeric: tabular-nums; border-bottom: 0.5pt solid #ddd; }
+  table.totals td.num { text-align: right; }
+  table.totals tr.grand td { font-weight: bold; font-size: 12pt; border-top: 1.2pt solid #1a1a1a; border-bottom: none; padding-top: 3mm; }
+  .footer { margin-top: 10mm; font-size: 8.5pt; color: #777; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="org">
+    <h1>{{ labels.title }}</h1>
+    <div class="muted">{{ gym.name }}</div>
+  </div>
+  <div class="meta">
+    <div>{{ labels.period }}: {{ run.period_bs }} BS</div>
+    <div>{{ generated_bs }} BS</div>
+  </div>
+</div>
+
+<div>
+  <div class="label">{{ labels.employee }}</div>
+  <div>{{ staff.user.full_name }} &middot; {{ staff.badge_code }}</div>
+</div>
+
+<table class="totals">
+  <tr><td>{{ labels.base }}</td><td class="num">{{ payslip.base_npr }}</td></tr>
+  <tr><td>{{ labels.commission }}</td><td class="num">{{ payslip.commission_npr }}</td></tr>
+  <tr><td>{{ labels.incentives }}</td><td class="num">{{ payslip.incentives_npr }}</td></tr>
+  <tr><td>{{ labels.advances }}</td><td class="num">&minus;{{ payslip.advances_npr }}</td></tr>
+  <tr><td>{{ labels.tds }}</td><td class="num">&minus;{{ payslip.tds_npr }}</td></tr>
+  <tr><td>{{ labels.social_security }}</td><td class="num">&minus;{{ payslip.social_security_npr }}</td></tr>
+  <tr class="grand"><td>{{ labels.net }}</td><td class="num">NPR {{ payslip.net_npr }}</td></tr>
+</table>
+
+<div class="footer">FitKhata &middot; {{ gym.name }}</div>
+
+</body>
+</html>

@@ -36,6 +36,7 @@ from members.serializers import (
 )
 from members.services import register_member, sell_membership, submit_feedback, transfer_member
 from members.tasks import import_members_task
+from saas.services import MemberLimitExceeded
 
 SEARCH_RESULT_LIMIT = 50
 
@@ -102,9 +103,12 @@ class MemberViewSet(TenantViewSet):
     def perform_create(self, serializer):
         if self.request.gym is None:
             raise PermissionDenied("X-Gym-Id header is required.")
-        serializer.instance = register_member(
-            self.request.gym, actor=self.request.user, **serializer.validated_data
-        )
+        try:
+            serializer.instance = register_member(
+                self.request.gym, actor=self.request.user, **serializer.validated_data
+            )
+        except MemberLimitExceeded as exc:
+            raise PermissionDenied(str(exc)) from exc
 
     @action(detail=True, methods=["post"])
     def sell(self, request, pk=None):

@@ -125,6 +125,14 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # File storage: Cloudflare R2 (S3-compatible) in prod when configured, else
 # Django's local filesystem storage for dev. No local object-store service —
 # MinIO's open-source edition was archived upstream in 2026.
+#
+# MEDIA_ROOT/MEDIA_URL must be set explicitly for the local-storage fallback
+# below: Django defaults MEDIA_ROOT to '', which resolves uploads relative to
+# the process's cwd (whatever that happened to be when manage.py ran) rather
+# than a fixed directory — confirmed the hard way when that wrote member
+# waiver PDFs straight into apps/api/members/ instead of anywhere sane.
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "media/"
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="")
 if AWS_STORAGE_BUCKET_NAME:
     AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
@@ -237,3 +245,8 @@ ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", default="claude-sonnet-5")
 # Static manual FX rate, not a live pull — not worth the complexity until
 # NPR drift actually matters for a monthly AI budget this coarse.
 ANTHROPIC_USD_TO_NPR_RATE = Decimal(env("ANTHROPIC_USD_TO_NPR_RATE", default="140.00"))
+
+# Platform/super-admin console (Phase 11) — optional IP allowlist for
+# IsPlatformStaff; empty list (the default) disables the check entirely.
+# Each entry is a single IP or CIDR range, parsed with ipaddress.ip_network.
+PLATFORM_IP_ALLOWLIST = env.list("PLATFORM_IP_ALLOWLIST", default=[])

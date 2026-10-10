@@ -128,3 +128,14 @@ def format_bs(ad_date: date, lang: str = "en") -> str:
         return f"{year} {month_name} {day}".translate(_NE_DIGITS)
     month_name = MONTH_NAMES_EN[month - 1]
     return f"{year} {month_name} {day}"
+
+
+def month_range(bs_year: int, bs_month: int) -> tuple[date, date]:
+    """The AD (start, end) dates spanned by one BS month — e.g. for
+    payroll.services turning a PayrollRun.period_bs 'YYYY-MM' into the AD
+    date range its shifts/attendance/advances/commissions fall in.
+    """
+    start = to_ad(bs_year, bs_month, 1)
+    last_day = BS_MONTH_LENGTHS[bs_year][bs_month - 1]
+    end = to_ad(bs_year, bs_month, last_day)
+    return start, end

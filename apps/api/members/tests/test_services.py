@@ -13,6 +13,8 @@ from core.context import system_context
 from gyms.models import Gym, Organization
 from members.models import AddOn, Plan, PromoCode
 from members.services import PromoNotApplicable, register_member, sell_membership, transfer_member
+from saas.models import SaasPlan, Subscription
+from saas.services import MemberLimitExceeded
 
 pytestmark = pytest.mark.django_db
 
@@ -69,6 +71,24 @@ def test_register_member_encrypts_qr_secret(gym):
 
     assert len(bytes(member.qr_secret)) != 32
     assert len(decrypt_bytes(bytes(member.qr_secret))) == 32
+
+
+def test_register_member_raises_at_plan_member_limit(gym):
+    with system_context():
+        plan = SaasPlan.objects.get(code=SaasPlan.Code.STARTER)
+        plan.member_limit = 1
+        plan.save(update_fields=["member_limit"])
+        Subscription.objects.create(
+            org=gym.org,
+            plan=plan,
+            billing_cycle=Subscription.BillingCycle.MONTHLY,
+            current_period_start=date.today(),
+            current_period_end=date.today() + timedelta(days=30),
+            status=Subscription.Status.ACTIVE,
+        )
+        register_member(gym, full_name="Ram Shrestha", phone="+9779800000001")
+        with pytest.raises(MemberLimitExceeded):
+            register_member(gym, full_name="Sita Gurung", phone="+9779800000002")
 
 
 def test_sell_membership_creates_invoice_and_dates(gym, plan):

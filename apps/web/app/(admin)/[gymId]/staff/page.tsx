@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { listStaffRoles, type StaffRole } from "@fitkhata/api-client";
 
+import { StaffTabs } from "@/components/staff/staff-tabs";
+
 export default function StaffPage() {
   const [roles, setRoles] = useState<StaffRole[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,6 +21,7 @@ export default function StaffPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Staff</h1>
+      <StaffTabs />
       {error && <p className="text-sm text-red-600">{error}</p>}
       {roles && (
         <table className="w-full text-sm">

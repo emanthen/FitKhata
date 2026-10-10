@@ -12,6 +12,14 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 GYM_HEADER = "HTTP_X_GYM_ID"
 ROLE_RANK = {"owner": 3, "manager": 2, "front_desk": 1, "trainer": 0}
 
+UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+# FR-11.3: a read_only/suspended org can still check members in at the
+# desk (attendance/manual — gate/* kiosk check-ins never reach this check
+# at all, see _handle_device_auth's early return) and can still pay its
+# way back to active (saas/invoices/<id>/pay + its callback) — everything
+# else gym-scoped and mutating is blocked.
+READ_ONLY_EXEMPT_PREFIXES = ("/api/v1/attendance/manual", "/api/v1/saas/invoices/")
+
 
 class TenantMiddleware:
     """Resolves the caller and the active gym, and scopes Postgres RLS to it.
@@ -48,6 +56,11 @@ class TenantMiddleware:
         request.gym = gym  # type: ignore[attr-defined]
         request.role = role  # type: ignore[attr-defined]
 
+        if gym is not None and request.method in UNSAFE_METHODS:
+            blocked = self._read_only_block(gym, request.path)
+            if blocked is not None:
+                return blocked
+
         with transaction.atomic():
             with connection.cursor() as cursor:
                 cursor.execute("SELECT set_config('app.user_id', %s, true)", [str(user.pk)])
@@ -55,6 +68,29 @@ class TenantMiddleware:
                     "SELECT set_config('app.gym_ids', %s, true)", [str(gym.pk) if gym else ""]
                 )
             return self.get_response(request)
+
+    def _read_only_block(self, gym, path: str) -> HttpResponse | None:
+        """None = allow. Subscription carries no RLS at all (see
+        saas/models.py) so this plain query needs no system_context().
+        """
+        if path.startswith(READ_ONLY_EXEMPT_PREFIXES):
+            return None
+
+        from django.http import JsonResponse
+
+        from saas.models import Subscription
+
+        sub_status = (
+            Subscription.objects.filter(org_id=gym.org_id)
+            .values_list("status", flat=True)
+            .first()
+        )
+        if sub_status not in (Subscription.Status.READ_ONLY, Subscription.Status.SUSPENDED):
+            return None
+        return JsonResponse(
+            {"detail": "This organization's account is read-only pending payment."},
+            status=402,
+        )
 
     def _handle_device_auth(self, request: HttpRequest, auth_header: str) -> HttpResponse:
         """A paired device is permanently bound to one gym — skip the

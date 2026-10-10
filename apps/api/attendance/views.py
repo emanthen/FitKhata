@@ -33,6 +33,7 @@ from attendance.services import (
 from core.context import system_context
 from core.crypto import decrypt_bytes
 from members.models import Member
+from staff.models import StaffProfile
 
 MEMBER_PASS_SALT = "attendance.member-pass"
 MEMBER_PASS_MAX_AGE = 2 * 365 * 24 * 60 * 60  # 2 years — see services docstring
@@ -120,7 +121,30 @@ class GateSnapshotView(APIView):
                 }
             )
 
-        return Response({"members": payload, "server_time": server_time.isoformat()})
+        # Phase 9 staff badges — additive key only, member sync above is
+        # completely untouched. STAFF- prefixed badge_code (vs. member_
+        # code's "{gym.code}-####") keeps the two lists unambiguous even
+        # if a kiosk build merges them before matching a scanned token.
+        staff_qs = StaffProfile.objects.filter(gym=request.gate_device.gym, is_active=True)
+        if since is not None:
+            staff_qs = staff_qs.filter(updated_at__gt=since)
+        staff_payload = [
+            {
+                "badge_code": staff.badge_code,
+                "staff_id": staff.pk,
+                "qr_secret": encrypt_for_device(device_key, decrypt_bytes(bytes(staff.qr_secret))),
+                "updated_at": staff.updated_at.isoformat(),
+            }
+            for staff in staff_qs
+        ]
+
+        return Response(
+            {
+                "members": payload,
+                "staff": staff_payload,
+                "server_time": server_time.isoformat(),
+            }
+        )
 
 
 class GateCheckinsBatchView(APIView):

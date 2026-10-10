@@ -1,0 +1,24 @@
+# Nepal individual salary TDS slabs, fiscal year 2083/84 (Shrawan 2083 -
+# Ashadh 2084). ANNUAL cumulative NPR bands, individual/unmarried rates.
+#
+# *** confirmed: false — these figures are structurally-plausible
+# placeholders, NOT verified current Nepali tax law. An owner must review
+# them against the actual IRD-published slabs for this fiscal year and
+# flip `confirmed: true` (via the owner-only confirm endpoint) before any
+# payroll run is allowed to finalize against this file. staff.services.
+# finalize_payroll_run() enforces this — it is not just a comment. ***
+fiscal_year: "2083/84"
+confirmed: false
+confirmed_by: null
+confirmed_at: null
+slabs:
+  - upto: 500000
+    rate_pct: 1 # social security tax — the task's "1% first slab" rule
+  - upto: 700000
+    rate_pct: 10
+  - upto: 1000000
+    rate_pct: 20
+  - upto: 2000000
+    rate_pct: 30
+  - upto: null # uncapped top band
+    rate_pct: 36

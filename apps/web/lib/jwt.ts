@@ -8,6 +8,12 @@ export interface AccessTokenClaims {
   gym_ids: string[];
   role: string | null;
   exp: number;
+  // Phase 11 — FitKhata platform staff, not a gym StaffRole. Gates the
+  // (superadmin) route group client-side; the API re-checks via
+  // saas.permissions.IsPlatformStaff on every request regardless.
+  is_platform_staff?: boolean;
+  // Present only on an impersonation token (saas.services.start_impersonation).
+  impersonator_id?: string;
 }
 
 export function decodeAccessToken(token: string): AccessTokenClaims | null {

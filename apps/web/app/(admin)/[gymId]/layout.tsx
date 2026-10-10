@@ -7,6 +7,8 @@ import { tokenStore } from "@fitkhata/api-client";
 
 import { useAuth } from "@/lib/auth";
 import { BranchSwitcher } from "@/components/branch-switcher";
+import { ReadOnlyBanner } from "@/components/saas/read-only-banner";
+import { ImpersonationBanner } from "@/components/saas/impersonation-banner";
 
 const NAV_ITEMS: { label: string; href: string; minRole: string | null }[] = [
   { label: "Dashboard", href: "", minRole: null },
@@ -14,6 +16,7 @@ const NAV_ITEMS: { label: string; href: string; minRole: string | null }[] = [
   { label: "Call queue", href: "/retention/queue", minRole: "front_desk" },
   { label: "Retention", href: "/retention", minRole: "front_desk" },
   { label: "Staff", href: "/staff", minRole: "manager" },
+  { label: "Reports", href: "/reports", minRole: "manager" },
   { label: "Settings", href: "/settings", minRole: "owner" },
 ];
 
@@ -63,7 +66,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           Sign out
         </button>
       </aside>
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6">
+        <ImpersonationBanner />
+        <ReadOnlyBanner />
+        {children}
+      </main>
     </div>
   );
 }

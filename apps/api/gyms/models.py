@@ -6,16 +6,6 @@ from django.db import models
 class Organization(models.Model):
     """A billing/ownership account; one Organization can run multiple Gym locations."""
 
-    class SaasPlan(models.TextChoices):
-        TRIAL = "trial", "Trial"
-        BASIC = "basic", "Basic"
-        PRO = "pro", "Pro"
-
-    class SaasStatus(models.TextChoices):
-        ACTIVE = "active", "Active"
-        SUSPENDED = "suspended", "Suspended"
-        CANCELLED = "cancelled", "Cancelled"
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     pan_vat_no = models.CharField(max_length=32, blank=True)
@@ -23,10 +13,6 @@ class Organization(models.Model):
     # Whether plan/item prices already include VAT (sticker price = final
     # price) or VAT is added on top at invoice time — billing/domain/vat.py.
     vat_inclusive_pricing = models.BooleanField(default=False)
-    saas_plan = models.CharField(max_length=20, choices=SaasPlan.choices, default=SaasPlan.TRIAL)
-    saas_status = models.CharField(
-        max_length=20, choices=SaasStatus.choices, default=SaasStatus.ACTIVE
-    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -39,6 +25,7 @@ def default_gym_settings() -> dict:
         "red_list_days": 10,
         "anti_passback_min": 5,
         "ai_budget_npr_monthly": 2000,
+        "late_grace_min": 10,
     }
 
 

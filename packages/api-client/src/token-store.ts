@@ -2,6 +2,10 @@ const ACCESS_KEY = "fitkhata.access";
 const REFRESH_KEY = "fitkhata.refresh";
 const GYM_KEY = "fitkhata.activeGymId";
 const ONBOARDING_KEY = "fitkhata.onboardingProgress";
+// Session-scoped (not localStorage, same reasoning as onboarding progress
+// below): a platform staffer's own session stashed here for the duration
+// of one impersonation, so "exit impersonation" can restore it.
+const PLATFORM_BACKUP_KEY = "fitkhata.platformSessionBackup";
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -56,5 +60,38 @@ export const tokenStore = {
   clearOnboardingProgress: (): void => {
     if (!isBrowser()) return;
     sessionStorage.removeItem(ONBOARDING_KEY);
+  },
+  // Phase 11 impersonation: stashes the platform staffer's own access+
+  // refresh before switching to the impersonation access token (which has
+  // no refresh token of its own — it's deliberately single-shot and
+  // time-boxed; once it expires the next refresh attempt fails and
+  // httpClient's own interceptor clears the session, a safe hard-stop
+  // rather than silently reverting mid-session).
+  beginImpersonation: (access: string): void => {
+    if (!isBrowser()) return;
+    const current = tokenStore.getAccess();
+    const refresh = tokenStore.getRefresh();
+    if (current && refresh) {
+      sessionStorage.setItem(PLATFORM_BACKUP_KEY, JSON.stringify({ access: current, refresh }));
+    }
+    localStorage.setItem(ACCESS_KEY, access);
+    localStorage.removeItem(REFRESH_KEY);
+  },
+  isImpersonating: (): boolean =>
+    isBrowser() ? sessionStorage.getItem(PLATFORM_BACKUP_KEY) !== null : false,
+  endImpersonation: (): void => {
+    if (!isBrowser()) return;
+    const raw = sessionStorage.getItem(PLATFORM_BACKUP_KEY);
+    sessionStorage.removeItem(PLATFORM_BACKUP_KEY);
+    if (!raw) {
+      tokenStore.clear();
+      return;
+    }
+    try {
+      const { access, refresh } = JSON.parse(raw) as { access: string; refresh: string };
+      tokenStore.setTokens(access, refresh);
+    } catch {
+      tokenStore.clear();
+    }
   },
 };

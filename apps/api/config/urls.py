@@ -37,4 +37,7 @@ urlpatterns = [
     path("api/v1/", include("retention.urls")),
     path("api/v1/", include("notifications.urls")),
     path("api/v1/", include("coaching.urls")),
+    path("api/v1/", include("staff.urls")),
+    path("api/v1/", include("reports.urls")),
+    path("api/v1/", include("saas.urls")),
 ]

@@ -13,3 +13,6 @@ export * from "./attendance";
 export * from "./retention";
 export * from "./notifications";
 export * from "./coaching";
+export * from "./reports";
+export * from "./saas";
+export * from "./platform";

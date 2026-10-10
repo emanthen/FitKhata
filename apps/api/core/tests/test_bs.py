@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from core.domain.bs import format_bs, to_ad, to_bs
+from core.domain.bs import format_bs, month_range, to_ad, to_bs
 
 
 def test_bs_new_year_anchor() -> None:
@@ -68,3 +68,24 @@ def test_format_bs_english() -> None:
 
 def test_format_bs_nepali() -> None:
     assert format_bs(date(2026, 7, 17), lang="ne") == "२०८३ श्रावण १"
+
+
+# BS new year falls mid-April, so every BS month straddles two AD months —
+# there's no "doesn't cross" case to test against this calendar.
+@pytest.mark.parametrize(
+    ("bs_year", "bs_month", "start", "end"),
+    [
+        (2083, 4, date(2026, 7, 17), date(2026, 8, 16)),  # 31-day Shrawan
+        (2083, 8, date(2026, 11, 17), date(2026, 12, 15)),  # 29-day Mangsir
+    ],
+)
+def test_month_range(bs_year: int, bs_month: int, start: date, end: date) -> None:
+    assert month_range(bs_year, bs_month) == (start, end)
+
+
+def test_month_range_round_trips_through_to_bs() -> None:
+    from core.domain.bs import BS_MONTH_LENGTHS
+
+    start, end = month_range(2083, 6)
+    assert to_bs(start) == (2083, 6, 1)
+    assert to_bs(end) == (2083, 6, BS_MONTH_LENGTHS[2083][5])
