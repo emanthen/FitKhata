@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listFeatureFlags, upsertFeatureFlag } from "@fitkhata/api-client";
+import { Flag } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -41,70 +44,82 @@ export default function FeatureFlagsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Feature flags</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <Flag size={18} strokeWidth={2} className="text-primary" />
+        Feature flags
+      </h1>
 
-      <div className="flex items-end gap-2">
-        <div className="space-y-1">
-          <Label htmlFor="flag-key">Key</Label>
-          <Input
-            id="flag-key"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder="e.g. ai_insights"
-            className="w-56"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="flag-rollout">Rollout %</Label>
-          <Input
-            id="flag-rollout"
-            value={rolloutPct}
-            onChange={(e) => setRolloutPct(e.target.value)}
-            placeholder="optional"
-            className="w-28"
-          />
-        </div>
-        <Button onClick={create}>Add flag</Button>
-      </div>
+      <Card>
+        <CardContent>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="flag-key">Key</Label>
+              <Input
+                id="flag-key"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                placeholder="e.g. ai_insights"
+                className="h-8 w-56"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="flag-rollout">Rollout %</Label>
+              <Input
+                id="flag-rollout"
+                value={rolloutPct}
+                onChange={(e) => setRolloutPct(e.target.value)}
+                placeholder="optional"
+                className="h-8 w-28"
+              />
+            </div>
+            <Button size="sm" onClick={create}>
+              Add flag
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      {query.isLoading ? (
-        <p className="text-sm opacity-60">Loading...</p>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Key</TableHead>
-              <TableHead>Default</TableHead>
-              <TableHead>Rollout %</TableHead>
-              <TableHead>Per-org overrides</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(query.data ?? []).map((flag) => (
-              <TableRow key={flag.id}>
-                <TableCell className="font-medium">{flag.key}</TableCell>
-                <TableCell>
-                  <button
-                    onClick={() => toggleDefault(flag.key, flag.default)}
-                    className="rounded border px-2 py-0.5 text-xs"
-                  >
-                    {flag.default ? "on" : "off"}
-                  </button>
-                </TableCell>
-                <TableCell>{flag.rollout_pct ?? "—"}</TableCell>
-                <TableCell>{Object.keys(flag.per_org_overrides).length} org(s)</TableCell>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Key</TableHead>
+            <TableHead>Default</TableHead>
+            <TableHead>Rollout %</TableHead>
+            <TableHead>Per-org overrides</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {query.isLoading &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <TableRow key={`skeleton-${i}`}>
+                <TableCell colSpan={4} className="h-9" />
               </TableRow>
             ))}
-            {(query.data ?? []).length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center text-sm opacity-60">
-                  No feature flags yet.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      )}
+          {(query.data ?? []).map((flag) => (
+            <TableRow key={flag.id}>
+              <TableCell className="font-medium">{flag.key}</TableCell>
+              <TableCell>
+                <button onClick={() => toggleDefault(flag.key, flag.default)}>
+                  <Badge variant={flag.default ? "default" : "secondary"}>
+                    {flag.default ? "on" : "off"}
+                  </Badge>
+                </button>
+              </TableCell>
+              <TableCell className="font-dashboard-mono">{flag.rollout_pct ?? "-"}</TableCell>
+              <TableCell className="font-dashboard-mono">
+                {Object.keys(flag.per_org_overrides).length} org(s)
+              </TableCell>
+            </TableRow>
+          ))}
+          {!query.isLoading && (query.data ?? []).length === 0 && (
+            <TableRow>
+              <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                No feature flags yet.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

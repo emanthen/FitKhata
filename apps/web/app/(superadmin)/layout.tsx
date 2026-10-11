@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Bell, Building2, Flag, LifeBuoy, LineChart, LogOut } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS = [
-  { label: "Tenants", href: "/platform/tenants" },
-  { label: "Metrics", href: "/platform/metrics" },
-  { label: "Feature flags", href: "/platform/feature-flags" },
-  { label: "Announcements", href: "/platform/announcements" },
-  { label: "Tickets", href: "/platform/tickets" },
+  { label: "Tenants", href: "/platform/tenants", icon: Building2 },
+  { label: "Metrics", href: "/platform/metrics", icon: LineChart },
+  { label: "Feature flags", href: "/platform/feature-flags", icon: Flag },
+  { label: "Announcements", href: "/platform/announcements", icon: Bell },
+  { label: "Tickets", href: "/platform/tickets", icon: LifeBuoy },
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +25,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   if (!claims?.is_platform_staff) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center">
-        <p className="text-sm opacity-70">
+        <p className="text-sm text-muted-foreground">
           This area is for FitKhata platform staff only.
         </p>
       </div>
@@ -30,28 +33,46 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-56 flex-col justify-between border-r p-4">
-        <div className="space-y-4">
-          <p className="px-2 text-sm font-semibold">FitKhata Platform</p>
-          <nav className="space-y-1">
+    // Locked dark mode, regardless of the viewer's system/app theme — a
+    // platform console pretending to be a tenant's own admin (or vice
+    // versa) is a real risk given the impersonation flow this layout
+    // guards, so it stays visually unmistakable rather than following
+    // next-themes.
+    <div className="dark font-dashboard flex min-h-screen bg-background text-foreground">
+      <aside className="flex w-56 shrink-0 flex-col justify-between border-r p-4">
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 px-1">
+            <span className="bg-primary size-2.5 rounded-sm" />
+            <span className="text-sm font-semibold tracking-tight">FitKhata</span>
+            <Badge variant="outline" className="ml-auto border-accent/40 text-accent">
+              PLATFORM
+            </Badge>
+          </div>
+          <nav className="space-y-0.5">
             {NAV_ITEMS.map((item) => {
               const active = pathname === item.href;
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`block rounded px-2 py-1.5 text-sm ${active ? "bg-neutral-100 font-medium dark:bg-neutral-800" : "opacity-70 hover:opacity-100"}`}
+                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
+                    active
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-foreground/70 hover:bg-muted hover:text-foreground"
+                  }`}
                 >
+                  <Icon size={16} strokeWidth={2} />
                   {item.label}
                 </Link>
               );
             })}
           </nav>
         </div>
-        <button onClick={logout} className="text-left text-sm opacity-60 hover:opacity-100">
+        <Button variant="ghost" size="sm" onClick={logout} className="justify-start text-muted-foreground">
+          <LogOut size={14} strokeWidth={2} data-icon="inline-start" />
           Sign out
-        </button>
+        </Button>
       </aside>
       <main className="flex-1 p-6">{children}</main>
     </div>

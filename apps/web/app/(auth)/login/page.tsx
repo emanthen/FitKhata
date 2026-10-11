@@ -4,8 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { login, otpSend, otpVerify, tokenStore } from "@fitkhata/api-client";
+import { TriangleAlert } from "lucide-react";
 
 import { redirectAfterAuth } from "@/lib/auth";
+import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Tab = "password" | "otp";
 
@@ -32,35 +37,36 @@ export default function LoginPage() {
 
   return (
     <div className="w-full space-y-6">
-      <h1 className="text-2xl font-semibold">{t("signIn")}</h1>
-
-      <div className="flex gap-2 border-b">
-        <button
-          className={`px-3 py-2 ${tab === "password" ? "border-b-2 border-black font-medium" : "opacity-60"}`}
-          onClick={() => setTab("password")}
-        >
-          Password
-        </button>
-        <button
-          className={`px-3 py-2 ${tab === "otp" ? "border-b-2 border-black font-medium" : "opacity-60"}`}
-          onClick={() => setTab("otp")}
-        >
-          OTP
-        </button>
+      <div className="flex flex-col items-center gap-4">
+        <Logo size={28} />
+        <h1 className="text-xl font-semibold tracking-tight">{t("signIn")}</h1>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <TabsList variant="line" className="w-full">
+          <TabsTrigger value="password">Password</TabsTrigger>
+          <TabsTrigger value="otp">OTP</TabsTrigger>
+        </TabsList>
 
-      {tab === "password" ? (
-        <PasswordForm
-          loading={loading}
-          setLoading={setLoading}
-          setError={setError}
-          onSuccess={afterTokens}
-        />
-      ) : (
-        <OtpForm loading={loading} setLoading={setLoading} setError={setError} onSuccess={afterTokens} />
-      )}
+        {error && (
+          <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <TriangleAlert size={14} strokeWidth={2} />
+            {error}
+          </p>
+        )}
+
+        <TabsContent value="password">
+          <PasswordForm
+            loading={loading}
+            setLoading={setLoading}
+            setError={setError}
+            onSuccess={afterTokens}
+          />
+        </TabsContent>
+        <TabsContent value="otp">
+          <OtpForm loading={loading} setLoading={setLoading} setError={setError} onSuccess={afterTokens} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -102,38 +108,34 @@ function PasswordForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <input
-        className="w-full rounded border px-3 py-2"
+    <form onSubmit={submit} className="space-y-3 pt-4">
+      <Input
         placeholder="Phone or email"
         value={identifier}
         onChange={(e) => setIdentifier(e.target.value)}
+        className="h-11"
         required
       />
-      <input
-        className="w-full rounded border px-3 py-2"
+      <Input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        className="h-11"
         required
       />
       {needsTotp && (
-        <input
-          className="w-full rounded border px-3 py-2"
+        <Input
           placeholder="6-digit authenticator code"
           value={totpCode}
           onChange={(e) => setTotpCode(e.target.value)}
+          className="font-dashboard-mono h-11"
           required
         />
       )}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-      >
+      <Button type="submit" disabled={loading} size="lg" className="h-11 w-full">
         {loading ? "..." : "Sign in"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -208,73 +210,61 @@ function OtpForm({
 
   if (registrationToken) {
     return (
-      <form onSubmit={completeRegistration} className="space-y-3">
-        <p className="text-sm opacity-70">No account yet for {phone} — let&apos;s create one.</p>
-        <input
-          className="w-full rounded border px-3 py-2"
+      <form onSubmit={completeRegistration} className="space-y-3 pt-4">
+        <p className="text-sm text-muted-foreground">No account yet for {phone} - let&apos;s create one.</p>
+        <Input
           placeholder="Full name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
+          className="h-11"
           required
         />
-        <input
-          className="w-full rounded border px-3 py-2"
+        <Input
           type="password"
           placeholder="Choose a password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="h-11"
           minLength={8}
           required
         />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} size="lg" className="h-11 w-full">
           {loading ? "..." : "Create account"}
-        </button>
+        </Button>
       </form>
     );
   }
 
   if (!sent) {
     return (
-      <form onSubmit={sendCode} className="space-y-3">
-        <input
-          className="w-full rounded border px-3 py-2"
+      <form onSubmit={sendCode} className="space-y-3 pt-4">
+        <Input
           placeholder="+977..."
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          className="h-11"
           required
         />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} size="lg" className="h-11 w-full">
           {loading ? "..." : "Send code"}
-        </button>
+        </Button>
       </form>
     );
   }
 
   return (
-    <form onSubmit={verifyCode} className="space-y-3">
-      <p className="text-sm opacity-70">Code sent to {phone}.</p>
-      <input
-        className="w-full rounded border px-3 py-2"
+    <form onSubmit={verifyCode} className="space-y-3 pt-4">
+      <p className="text-sm text-muted-foreground">Code sent to {phone}.</p>
+      <Input
         placeholder="6-digit code"
         value={code}
         onChange={(e) => setCode(e.target.value)}
+        className="font-dashboard-mono h-11"
         required
       />
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-      >
+      <Button type="submit" disabled={loading} size="lg" className="h-11 w-full">
         {loading ? "..." : "Verify"}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -9,8 +9,24 @@ import {
   reissueTokens,
   tokenStore,
 } from "@fitkhata/api-client";
+import { TriangleAlert } from "lucide-react";
+
+import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Step = 1 | 2 | 3 | 4;
+
+const STEP_LABELS = ["Organization", "First branch", "Plans", "Invite staff"] as const;
 
 // Mandatory TOTP enrollment (see /totp-setup) is a full-page navigation away
 // from this wizard, which would otherwise lose orgId/step and restart at
@@ -109,146 +125,163 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="mx-auto max-w-lg space-y-6 px-4 py-12">
-      <ol className="flex gap-2 text-sm">
-        {(["Organization", "First branch", "Plans", "Invite staff"] as const).map((label, i) => (
-          <li
-            key={label}
-            className={`rounded px-2 py-1 ${step === i + 1 ? "bg-black text-white" : "opacity-50"}`}
-          >
-            {i + 1}. {label}
-          </li>
-        ))}
+    <main className="font-dashboard mx-auto max-w-lg space-y-6 px-4 py-12">
+      <Logo size={26} />
+
+      <ol className="flex gap-1.5">
+        {STEP_LABELS.map((label, i) => {
+          const n = (i + 1) as Step;
+          return (
+            <li
+              key={label}
+              className={`flex-1 rounded-md px-2 py-1.5 text-center text-xs font-medium transition-colors ${
+                step === n
+                  ? "bg-primary text-primary-foreground"
+                  : step > n
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {n}. {label}
+            </li>
+          );
+        })}
       </ol>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
       {step === 1 && (
-        <form onSubmit={createOrgStep} className="space-y-3">
-          <h2 className="text-xl font-semibold">Your organization</h2>
-          <input
-            className="w-full rounded border px-3 py-2"
-            placeholder="Organization name"
-            value={orgName}
-            onChange={(e) => setOrgName(e.target.value)}
-            required
-          />
-          <input
-            className="w-full rounded border px-3 py-2"
-            placeholder="PAN/VAT number"
-            value={panVat}
-            onChange={(e) => setPanVat(e.target.value)}
-          />
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={vatRegistered}
-              onChange={(e) => setVatRegistered(e.target.checked)}
-            />
-            VAT registered
-          </label>
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-          >
-            {loading ? "..." : "Next"}
-          </button>
-        </form>
+        <Card>
+          <CardContent>
+            <form onSubmit={createOrgStep} className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">Your organization</h2>
+              <Input
+                placeholder="Organization name"
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                className="h-11"
+                required
+              />
+              <Input
+                placeholder="PAN/VAT number"
+                value={panVat}
+                onChange={(e) => setPanVat(e.target.value)}
+                className="h-11"
+              />
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={vatRegistered}
+                  onCheckedChange={(checked) => setVatRegistered(checked === true)}
+                />
+                VAT registered
+              </label>
+              <Button type="submit" disabled={loading}>
+                {loading ? "..." : "Next"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {step === 2 && (
-        <form onSubmit={createGymStep} className="space-y-3">
-          <h2 className="text-xl font-semibold">Your first branch</h2>
-          <input
-            className="w-full rounded border px-3 py-2"
-            placeholder="Branch code (e.g. KTM1)"
-            value={gymCode}
-            onChange={(e) => setGymCode(e.target.value)}
-            required
-          />
-          <input
-            className="w-full rounded border px-3 py-2"
-            placeholder="Branch name"
-            value={gymName}
-            onChange={(e) => setGymName(e.target.value)}
-            required
-          />
-          <input
-            className="w-full rounded border px-3 py-2"
-            placeholder="City"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-          >
-            {loading ? "..." : "Next"}
-          </button>
-        </form>
+        <Card>
+          <CardContent>
+            <form onSubmit={createGymStep} className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">Your first branch</h2>
+              <Input
+                placeholder="Branch code (e.g. KTM1)"
+                value={gymCode}
+                onChange={(e) => setGymCode(e.target.value)}
+                className="h-11"
+                required
+              />
+              <Input
+                placeholder="Branch name"
+                value={gymName}
+                onChange={(e) => setGymName(e.target.value)}
+                className="h-11"
+                required
+              />
+              <Input
+                placeholder="City"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="h-11"
+              />
+              <Button type="submit" disabled={loading}>
+                {loading ? "..." : "Next"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {step === 3 && (
-        <div className="space-y-3">
-          <h2 className="text-xl font-semibold">Membership plans</h2>
-          <p className="text-sm opacity-70">
-            We&apos;ll set up default membership plans for you here — this comes with billing, in a
-            later release. You can skip this for now and add plans afterward.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setStep(4);
-              tokenStore.setOnboardingProgress({ step: 4, orgId });
-            }}
-            className="rounded bg-black px-4 py-2 text-white"
-          >
-            Next
-          </button>
-        </div>
+        <Card>
+          <CardContent className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-tight">Membership plans</h2>
+            <p className="text-sm text-muted-foreground">
+              We&apos;ll set up default membership plans for you here - this comes with billing, in
+              a later release. You can skip this for now and add plans afterward.
+            </p>
+            <Button
+              type="button"
+              onClick={() => {
+                setStep(4);
+                tokenStore.setOnboardingProgress({ step: 4, orgId });
+              }}
+            >
+              Next
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {step === 4 && (
-        <div className="space-y-3">
-          <h2 className="text-xl font-semibold">Invite your team</h2>
-          <form onSubmit={sendInvite} className="flex gap-2">
-            <select
-              className="rounded border px-3 py-2"
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value)}
+        <Card>
+          <CardContent className="space-y-4">
+            <h2 className="text-lg font-semibold tracking-tight">Invite your team</h2>
+            <form onSubmit={sendInvite} className="flex gap-2">
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger className="h-9 flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="front_desk">Front desk</SelectItem>
+                  <SelectItem value="trainer">Trainer</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button type="submit" disabled={loading}>
+                {loading ? "..." : "Create invite link"}
+              </Button>
+            </form>
+            {inviteLink && (
+              <p className="font-dashboard-mono break-all rounded-lg border bg-muted/40 p-3 text-xs">
+                {inviteLink}
+                <br />
+                <span className="font-sans text-muted-foreground">
+                  Valid for 72 hours. Share it with the new staff member.
+                </span>
+              </p>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                tokenStore.clearOnboardingProgress();
+                if (gymId) router.push(`/${gymId}`);
+              }}
             >
-              <option value="manager">Manager</option>
-              <option value="front_desk">Front desk</option>
-              <option value="trainer">Trainer</option>
-            </select>
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-            >
-              {loading ? "..." : "Create invite link"}
-            </button>
-          </form>
-          {inviteLink && (
-            <p className="break-all rounded border bg-neutral-50 p-3 text-xs dark:bg-neutral-900">
-              {inviteLink}
-              <br />
-              <span className="opacity-60">Valid for 72 hours. Share it with the new staff member.</span>
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              tokenStore.clearOnboardingProgress();
-              if (gymId) router.push(`/${gymId}`);
-            }}
-            className="rounded border px-4 py-2"
-          >
-            Done — go to dashboard
-          </button>
-        </div>
+              Done - go to dashboard
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </main>
   );

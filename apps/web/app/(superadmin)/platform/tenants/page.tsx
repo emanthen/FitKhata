@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { impersonate, listTenants, tokenStore } from "@fitkhata/api-client";
+import { Building2, UserCog } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,9 +65,12 @@ export default function TenantsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Tenants</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <Building2 size={18} strokeWidth={2} className="text-primary" />
+        Tenants
+      </h1>
       {query.isLoading ? (
-        <p className="text-sm opacity-60">Loading...</p>
+        <p className="text-sm text-muted-foreground">Loading...</p>
       ) : (
         <div className="overflow-x-auto">
           <Table>
@@ -90,12 +94,12 @@ export default function TenantsPage() {
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[row.status] ?? "outline"}>{row.status}</Badge>
                   </TableCell>
-                  <TableCell className="text-right">{formatNpr(row.mrr_npr)}</TableCell>
-                  <TableCell className="text-right">{row.member_count}</TableCell>
-                  <TableCell>
-                    {row.last_active_at ? new Date(row.last_active_at).toLocaleDateString() : "—"}
+                  <TableCell className="font-dashboard-mono text-right">{formatNpr(row.mrr_npr)}</TableCell>
+                  <TableCell className="font-dashboard-mono text-right">{row.member_count}</TableCell>
+                  <TableCell className="font-dashboard-mono text-xs text-muted-foreground">
+                    {row.last_active_at ? new Date(row.last_active_at).toLocaleDateString() : "-"}
                   </TableCell>
-                  <TableCell className="text-right">{row.health_score}</TableCell>
+                  <TableCell className="font-dashboard-mono text-right">{row.health_score}</TableCell>
                   <TableCell>
                     <Button
                       size="sm"
@@ -106,6 +110,7 @@ export default function TenantsPage() {
                         setError("");
                       }}
                     >
+                      <UserCog size={13} strokeWidth={2} data-icon="inline-start" />
                       Impersonate
                     </Button>
                   </TableCell>
@@ -129,7 +134,7 @@ export default function TenantsPage() {
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. investigating a billing issue"
             />
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTarget(null)}>

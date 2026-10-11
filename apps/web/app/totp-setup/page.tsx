@@ -4,8 +4,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { totpConfirm, totpSetup } from "@fitkhata/api-client";
+import { ShieldCheck, TriangleAlert } from "lucide-react";
 
 import { redirectAfterAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export default function TotpSetupPage() {
   const router = useRouter();
@@ -37,43 +41,50 @@ export default function TotpSetupPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center space-y-6 px-4">
+    <main className="font-dashboard mx-auto flex min-h-screen max-w-sm flex-col justify-center space-y-6 px-4">
       <div>
-        <h1 className="text-2xl font-semibold">Set up two-factor authentication</h1>
-        <p className="mt-2 text-sm opacity-70">
-          Required for owners. Scan this with Google Authenticator, Authy, or similar — there&apos;s
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <ShieldCheck size={18} strokeWidth={2} className="text-primary" />
+          Set up two-factor authentication
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Required for owners. Scan this with Google Authenticator, Authy, or similar - there&apos;s
           no way to skip this step.
         </p>
       </div>
 
       {otpauthUrl && (
-        <div className="flex justify-center rounded border bg-white p-4">
-          <QRCodeSVG value={otpauthUrl} size={200} />
-        </div>
+        <Card>
+          <CardContent className="flex justify-center bg-white py-6">
+            <QRCodeSVG value={otpauthUrl} size={200} />
+          </CardContent>
+        </Card>
       )}
       {secret && (
         <p className="text-sm">
-          Can&apos;t scan? Enter this code manually: <span className="font-mono">{secret}</span>
+          Can&apos;t scan? Enter this code manually:{" "}
+          <span className="font-dashboard-mono">{secret}</span>
         </p>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
       <form onSubmit={confirm} className="space-y-3">
-        <input
-          className="w-full rounded border px-3 py-2"
+        <Input
           placeholder="6-digit code from your app"
           value={code}
           onChange={(e) => setCode(e.target.value)}
+          className="font-dashboard-mono h-11"
           required
         />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} size="lg" className="h-11 w-full">
           {loading ? "..." : "Confirm"}
-        </button>
+        </Button>
       </form>
     </main>
   );

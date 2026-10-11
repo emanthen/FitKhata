@@ -3,17 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { getPlatformMetrics } from "@fitkhata/api-client";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Banknote, LineChart as LineChartIcon, TrendingDown, TrendingUp } from "lucide-react";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatTile } from "@/components/stat-tile";
 import { formatNpr } from "@/lib/money";
-
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border p-4">
-      <p className="text-sm opacity-70">{label}</p>
-      <p className="text-2xl font-semibold">{value}</p>
-    </div>
-  );
-}
 
 export default function MetricsPage() {
   const query = useQuery({ queryKey: ["platform", "metrics"], queryFn: getPlatformMetrics });
@@ -25,31 +20,47 @@ export default function MetricsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Metrics</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <LineChartIcon size={18} strokeWidth={2} className="text-primary" />
+        Metrics
+      </h1>
       {query.isLoading ? (
-        <p className="text-sm opacity-60">Loading...</p>
+        <Skeleton className="h-60 w-full rounded-xl" />
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatTile label="MRR" value={formatNpr(data?.mrr_npr ?? "0", { symbol: true })} />
-            <StatTile label="Churn rate" value={`${data?.churn_rate_pct ?? 0}%`} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <StatTile
+              label="MRR"
+              icon={<Banknote size={16} strokeWidth={2} />}
+              value={formatNpr(data?.mrr_npr ?? "0", { symbol: true })}
+            />
+            <StatTile
+              label="Churn rate"
+              icon={<TrendingDown size={16} strokeWidth={2} />}
+              value={`${data?.churn_rate_pct ?? 0}%`}
+            />
             <StatTile
               label="Trial conversion"
+              icon={<TrendingUp size={16} strokeWidth={2} />}
               value={`${data?.trial_conversion_pct ?? 0}%`}
             />
           </div>
-          <div className="rounded border p-4">
-            <h2 className="mb-3 text-sm font-medium opacity-70">Subscriptions by status</h2>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={byStatus}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="status" fontSize={11} />
-                <YAxis fontSize={11} allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#2563eb" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">Subscriptions by status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={byStatus}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="status" fontSize={11} stroke="var(--muted-foreground)" />
+                  <YAxis fontSize={11} allowDecimals={false} stroke="var(--muted-foreground)" />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

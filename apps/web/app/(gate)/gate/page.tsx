@@ -4,9 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { pairDevice } from "@fitkhata/api-client";
 import { BrowserQRCodeReader } from "@zxing/browser";
+import { QrCode, TriangleAlert } from "lucide-react";
 
 import { hexToBytes, verify } from "@/lib/qr";
 import { getDeviceAuth, setDeviceAuth, type DeviceAuth } from "@/lib/gate/auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   enqueueCheckin,
   getMemberByCardUid,
@@ -69,34 +73,42 @@ function PairingScreen({ onPaired }: { onPaired: (auth: DeviceAuth) => void }) {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-4 text-black">
-      <h1 className="text-2xl font-semibold">{t("pairTitle")}</h1>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <form onSubmit={submit} className="space-y-3">
-        <input
-          className="w-full rounded border px-3 py-2 text-center text-2xl tracking-widest"
-          placeholder={t("pairCode")}
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          maxLength={6}
-          minLength={6}
-          required
-        />
-        <input
-          className="w-full rounded border px-3 py-2"
-          placeholder={t("pairDeviceName")}
-          value={deviceName}
-          onChange={(e) => setDeviceName(e.target.value)}
-          required
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-        >
-          {loading ? "..." : t("pairSubmit")}
-        </button>
-      </form>
+    <div className="w-full max-w-sm space-y-5">
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <QrCode size={18} strokeWidth={2} className="text-primary" />
+        {t("pairTitle")}
+      </h1>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
+      <Card>
+        <CardContent>
+          <form onSubmit={submit} className="space-y-3">
+            <Input
+              className="font-dashboard-mono h-14 text-center text-2xl tracking-widest"
+              placeholder={t("pairCode")}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              maxLength={6}
+              minLength={6}
+              required
+            />
+            <Input
+              className="h-11"
+              placeholder={t("pairDeviceName")}
+              value={deviceName}
+              onChange={(e) => setDeviceName(e.target.value)}
+              required
+            />
+            <Button type="submit" disabled={loading} size="lg" className="h-11 w-full">
+              {loading ? "..." : t("pairSubmit")}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
