@@ -41,6 +41,46 @@ DUES_AGEING_LABELS: dict[str, dict[str, str]] = {
 }
 
 
+# FR-12.5: column layouts for the two accounting packages gyms in Nepal
+# commonly use. Neither vendor publishes a single canonical import-CSV
+# spec this project has in hand -- these are a best-effort generic
+# voucher-import shape (Date/Voucher/Ledger/Debit/Credit/Narration),
+# differing only in the header names each tool's own importer expects.
+# Revisit against a real sample export from either tool if one surfaces.
+TALLY_JOURNAL_FIELDS = {
+    "date": "Date",
+    "voucher": "Voucher No",
+    "ledger": "Ledger",
+    "debit_npr": "Debit Amount",
+    "credit_npr": "Credit Amount",
+    "narration": "Narration",
+}
+
+SWASTIK_JOURNAL_FIELDS = {
+    "date": "Date",
+    "voucher": "Voucher No",
+    "ledger": "Particulars",
+    "debit_npr": "Dr Amount",
+    "credit_npr": "Cr Amount",
+    "narration": "Remarks",
+}
+
+
+def _rename_journal_rows(
+    rows: list[dict[str, Any]], column_map: dict[str, str]
+) -> tuple[list[dict[str, Any]], list[str]]:
+    renamed = [{column_map[key]: value for key, value in row.items()} for row in rows]
+    return renamed, list(column_map.values())
+
+
+def to_tally_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
+    return _rename_journal_rows(rows, TALLY_JOURNAL_FIELDS)
+
+
+def to_swastik_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
+    return _rename_journal_rows(rows, SWASTIK_JOURNAL_FIELDS)
+
+
 def rows_to_csv(rows: list[dict[str, Any]], fieldnames: list[str]) -> bytes:
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=fieldnames)

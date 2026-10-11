@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "staff",
     "reports",
     "saas",
+    "publicapi",
 ]
 
 MIDDLEWARE = [
@@ -105,6 +106,16 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "Asia/Kathmandu"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# Redis-backed cache: django-ratelimit's storage for FR-12.3's public API
+# rate limits (Django 5.1's built-in Redis backend -- no extra package).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_URL,
+    },
+}
+RATELIMIT_USE_CACHE = "default"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -207,10 +218,22 @@ LOGGING = {
 }
 
 SENTRY_DSN = env("SENTRY_DSN", default="")
+# H3 pilot checklist: without a release tag, every error in Sentry looks
+# the same regardless of which deploy introduced it -- IMAGE_TAG (the git
+# SHA for staging, the tag for prod; see docs/RUNBOOK.md) is already the
+# thing CI picks the image by, just not previously passed into the running
+# container at all. infra/docker-compose.yml's x-django-env now forwards
+# it here as SENTRY_RELEASE.
+SENTRY_RELEASE = env("SENTRY_RELEASE", default="unknown")
 if SENTRY_DSN:
     import sentry_sdk
 
-    sentry_sdk.init(dsn=SENTRY_DSN, traces_sample_rate=0.1, send_default_pii=False)
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        release=SENTRY_RELEASE,
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
 
 # Fernet key for per-gym payment credential encryption (core.crypto). Rule 10.
 FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="")
@@ -222,6 +245,12 @@ WHATSAPP_CLOUD_API_TOKEN = env("WHATSAPP_CLOUD_API_TOKEN", default="")
 WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")
 WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")
 WHATSAPP_WEBHOOK_VERIFY_TOKEN = env("WHATSAPP_WEBHOOK_VERIFY_TOKEN", default="")
+
+# FR-12.6: Facebook Lead Ads webhook — same Meta verify-token/signature
+# shape as WHATSAPP_APP_SECRET/WHATSAPP_WEBHOOK_VERIFY_TOKEN above, just a
+# separate app/secret pair since it's a different Meta product integration.
+FACEBOOK_APP_SECRET = env("FACEBOOK_APP_SECRET", default="")
+FACEBOOK_LEAD_WEBHOOK_VERIFY_TOKEN = env("FACEBOOK_LEAD_WEBHOOK_VERIFY_TOKEN", default="")
 
 VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
 VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")

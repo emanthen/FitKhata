@@ -202,6 +202,34 @@ class SupportTicketMessage(models.Model):
         ordering = ["created_at"]
 
 
+class Lead(models.Model):
+    """FR-12.6: a captured trial/sales lead -- Facebook Lead Ads today,
+    `source` leaves room for others later. Platform-level like everything
+    else in this file: a lead precedes any Organization existing at all, so
+    it can't be a TenantModel. No pipeline/stage field -- this codebase has
+    no actual lead pipeline built yet (the spec's own "Phase 2 pipeline"
+    reference doesn't correspond to anything in this repo); this is
+    deliberately just a flat capture log for staff to work from manually.
+    """
+
+    class Status(models.TextChoices):
+        NEW = "new", "New"
+        CONTACTED = "contacted", "Contacted"
+        CONVERTED = "converted", "Converted"
+        LOST = "lost", "Lost"
+
+    full_name = models.CharField(max_length=200, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    source = models.CharField(max_length=50, default="facebook_lead_ads")
+    raw_payload = models.JSONField(default=dict)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.full_name or self.phone or self.email} ({self.source})"
+
+
 class PlatformAuditLog(models.Model):
     """Cross-tenant/platform-staff action audit — core.AuditLog can't
     represent these (it requires non-null org AND gym; several of these

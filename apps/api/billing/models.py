@@ -208,6 +208,54 @@ class Payment(TenantModel):
         return f"{self.transaction_uuid} ({self.status})"
 
 
+class Product(TenantModel):
+    """FR-12.7: retail stock sold at the front desk (protein, gloves,
+    water bottles, etc.) — separate from membership Plans/AddOns, which
+    stay membership-only concepts.
+    """
+
+    sku = models.CharField(max_length=50)
+    name = models.CharField(max_length=200)
+    price_npr = models.DecimalField(max_digits=12, decimal_places=2)
+    stock_qty = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["gym", "sku"], name="unique_product_sku_per_gym"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.sku} - {self.name}"
+
+
+class Sale(TenantModel):
+    """One POS transaction. Reuses billing.services.create_draft_invoice for
+    the invoice itself (rule 8 numbering, rule 9 service-layer) rather than
+    a parallel numbering/line scheme — this just links a Sale/SaleLine
+    breakdown back to that invoice for stock-decrement and sales reporting.
+    """
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name="sales")
+    created_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    def __str__(self) -> str:
+        return f"Sale {self.pk} (invoice {self.invoice_id})"
+
+
+class SaleLine(TenantModel):
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="lines")
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="+")
+    quantity = models.PositiveIntegerField()
+    unit_price_npr = models.DecimalField(max_digits=12, decimal_places=2)
+    line_total_npr = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def __str__(self) -> str:
+        return f"{self.quantity}x {self.product_id} (sale {self.sale_id})"
+
+
 class CreditNote(TenantModel):
     """approved_by is null until an owner approves it (FR-4.8) — the first
     use of the IsOwner permission in this codebase for an actual gate

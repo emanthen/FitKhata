@@ -120,21 +120,131 @@ one:
    it, then remove the old key from `~deploy/.ssh/authorized_keys` and from
    the `SSH_PRIVATE_KEY` GitHub secret.
 
-## Add a gym's payment keys
+## Tune worker counts for the VPS size
 
-Per-gym payment provider credentials are stored Fernet-encrypted in the
-database (`FIELD_ENCRYPTION_KEY` in `infra/.env` is the encryption key for
-*all* gyms — rotating it requires re-encrypting every stored credential, so
-treat it like a master key).
+`GUNICORN_WORKERS` (set in `infra/.env`, read by `infra/docker-compose.yml`'s
+`api` service) controls the API's gunicorn process count — H2's own rule of
+thumb is `(2 x vCPU) + 1`:
+
+| Server | vCPU | `GUNICORN_WORKERS` |
+|---|---|---|
+| `prod-1` | 4 | `9` |
+| `staging-1` | 2 | `5` (the compose file's default — only prod needs the override) |
+
+Before this was tuned, the API ran with gunicorn's bare default of **1**
+worker (no `--workers` flag was ever set) — fine for `make dev`'s single-
+request local testing, silently a bottleneck in anything resembling real
+traffic. Check it's actually taking effect after a deploy:
 
 ```bash
-docker compose exec api python manage.py shell -c "
-from gyms.models import Gym
-gym = Gym.objects.get(pk=GYM_ID)
-gym.payment_provider_key = 'the-provider-secret'  # encrypted on save via the model's Fernet field
-gym.save()
-"
+docker compose exec api ps aux | grep -c "gunicorn: worker"
 ```
+
+Celery's own worker concurrency isn't tuned here — it defaults to the
+container's visible CPU count (`os.cpu_count()`), which is already correct
+without an explicit flag.
+
+**Not done yet, flagged not fixed:** connection pooling (PgBouncer, transaction
+mode). At the stated scale (move Postgres to its own box around 300 gyms)
+this isn't yet a bottleneck, but when it is: transaction-mode pooling is
+required, not session-mode — `core.context.tenant_context`'s RLS scoping
+uses `SET LOCAL app.gym_ids`, which only lives for the current transaction
+and resets automatically before the connection returns to the pool. Session
+mode would leak one request's `gym_ids` into the next request that happens
+to grab the same pooled connection — a real cross-tenant data leak, not a
+theoretical one. **Add `tests/rls/test_isolation.py` coverage running
+through an actual PgBouncer instance before trusting this in production**,
+not just the no-pooling path it tests today.
+
+## Load testing
+
+k6 scenarios for the traffic shapes that actually matter here (gate batch
+sync, member search, owner dashboard, payment collection) live in
+`tests/load/` — see `tests/load/README.md` for what each one needs seeded
+on the target before it means anything. None of them have been run against
+a live target as of this writing; they're new, not yet a passing gate.
+
+## Add a gym's payment keys
+
+This section was a placeholder written before `GatewayCredential` existed
+and had gone stale (referenced a `Gym.payment_provider_key` field that was
+never actually built) — corrected 2026-10-11.
+
+Per-gym payment provider credentials are stored Fernet-encrypted in
+`billing.models.GatewayCredential`, one row per (gym, provider,
+environment) (`FIELD_ENCRYPTION_KEY` in `infra/.env` is the encryption key
+for *every* gym's credentials — rotating it requires re-encrypting every
+stored row, so treat it like a master key). Creation goes through
+`GatewayCredentialSerializer.create()` (encryption happens there), called
+via `GatewayCredentialViewSet` — there's no standalone service function to
+script a one-off creation against. **Always use the web UI** (owner,
+**Settings → Payment gateways & VAT**) rather than reaching for the Django
+shell here — see "Go live on a pilot gym's real payment gateway" below for
+the full sandbox→live sequence.
+
+## Onboard a real pilot gym
+
+H3's "seed scripts for a real gym" — this is the actual sequence, not a
+script, since every step after the first needs that gym's own real data
+(their member list, their real gateway merchant credentials) that no
+seed script could provide. Follow `docs/onboarding/owner-guide.en.md` for
+the UI walkthrough; this is the ops-side checklist and the two things
+that need more care than the guide spells out: the Excel import format,
+and the live-payment verification step.
+
+1. **Organization + first branch + plans + staff invites** — the owner
+   does this themselves via the 4-step onboarding wizard
+   (`docs/onboarding/owner-guide.en.md` §1). Nothing ops-specific here.
+
+2. **Import their existing members** (**Settings → Membership → Import
+   members**, or `POST /api/v1/members/import` directly). The importer
+   (`members/tasks.py::import_members_task`) accepts CSV or XLSX with
+   these exact column headers — get the gym's spreadsheet into this shape
+   before uploading, this is the #1 reason an import comes back with a
+   long error report:
+
+   | Column | Required | Format |
+   |---|---|---|
+   | `full_name` | yes | plain text |
+   | `phone` | yes | any format accepted, but must be a real, unique number per member |
+   | `gender` | no | free text, lowercased on import |
+   | `dob` | no | `YYYY-MM-DD` — anything else fails that row |
+   | `tags` | no | comma-separated, e.g. `vip,referral` |
+   | `marketing_opt_in` | no | `true`/`1`/`yes` for opted in, anything else (including blank) is opted out |
+
+   A row missing `full_name` or `phone`, or with a malformed `dob`, fails
+   just that row — the job still completes, and `ImportJob.error_report`
+   (downloadable from the import screen) lists exactly which rows and
+   why, so the gym can fix and re-upload only those rows rather than the
+   whole file. Memberships/plans/payment history don't come across in
+   this importer — it's members-only (FR-2.8's own scope); if the pilot
+   gym needs their active memberships recreated too, that's a manual
+   follow-up per member, not something to script around this importer.
+
+3. **Go live on the gym's real payment gateway.** Do not skip the test
+   transaction — `test_connection` (the "Test connection" button next to
+   each credential) is explicitly **not** a full credential check for
+   eSewa (its own docstring: "a success... just means the request was
+   well-formed" — eSewa has no dedicated credential-validation endpoint
+   short of an actual payment attempt). For Khalti it does catch a wrong
+   secret key outright; for eSewa and Fonepay it doesn't.
+
+   1. Add the gym's real merchant credential in **sandbox** mode first.
+      Run a test renewal through the Member PWA against the sandbox
+      credential, confirm it completes and the membership activates.
+   2. Switch the same credential's environment to **live** (owner-only,
+      same settings page) with the gym's real merchant credentials.
+   3. **Run one real NPR 10 transaction** through the actual desk-collect
+      or member-renewal flow — not `test_connection`, a real payment a
+      real person completes — and confirm: the payment shows completed,
+      the invoice issues, and the money actually lands in the gym's own
+      merchant account (check their eSewa/Khalti/Fonepay merchant
+      dashboard directly, not just FitKhata's side). Only once all three
+      are confirmed is this gym's live gateway trustworthy for their real
+      members' money.
+   4. Refund or keep the NPR 10 per the gym's own preference — FitKhata
+      has no automatic refund path for this, it's between the gym and
+      whoever made the test payment.
 
 (Swap in the real management command once the billing app grows one —
 `manage.py shell` is the stopgap until then.)

@@ -38,7 +38,9 @@ export default function LoginPage() {
   return (
     <div className="w-full space-y-6">
       <div className="flex flex-col items-center gap-4">
-        <Logo size={28} />
+        <div className="md:hidden">
+          <Logo size={28} />
+        </div>
         <h1 className="text-xl font-semibold tracking-tight">{t("signIn")}</h1>
       </div>
 

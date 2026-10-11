@@ -28,4 +28,9 @@ RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
-CMD ["gunicorn", "config.wsgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+# Shell form (not exec-form array) so $GUNICORN_WORKERS actually expands --
+# without --workers, gunicorn defaults to exactly 1, which was silently
+# the case here (H2 hardening: "tune gunicorn workers (2 x CPU + 1)").
+# Default of 3 fits staging-1 (2 vCPU); prod-1 (4 vCPU) should set
+# GUNICORN_WORKERS=9 in its own env.
+CMD gunicorn config.wsgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers ${GUNICORN_WORKERS:-3}

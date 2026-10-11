@@ -23,7 +23,7 @@ from attendance.views import MEMBER_PASS_MAX_AGE, MEMBER_PASS_SALT
 from billing.domain.shift import variance
 from billing.gateways import get_gateway
 from billing.gateways.base import GatewayNotConfigured, GatewayVerificationFailed
-from billing.models import CashShift, CreditNote, GatewayCredential, Invoice, Payment
+from billing.models import CashShift, CreditNote, GatewayCredential, Invoice, Payment, Product
 from billing.receipts import render_invoice_pdf, render_receipt_text
 from billing.serializers import (
     CashShiftSerializer,
@@ -32,8 +32,17 @@ from billing.serializers import (
     GatewayCredentialSerializer,
     InvoiceSerializer,
     PaymentSerializer,
+    ProductSerializer,
+    RingUpSaleSerializer,
+    SaleSerializer,
 )
-from billing.services import collect_payment, shift_expected_cash_npr
+from billing.services import (
+    InsufficientStock,
+    SaleLineInput,
+    collect_payment,
+    record_pos_sale,
+    shift_expected_cash_npr,
+)
 from core.context import system_context
 from core.services import audit
 from core.viewsets import TenantQuerysetMixin, TenantViewSet
@@ -354,6 +363,43 @@ class CreditNoteViewSet(
         credit_note.save(update_fields=["approved_by", "approved_at"])
         audit(credit_note, "update", after={"approved": True}, actor=request.user)
         return Response(CreditNoteSerializer(credit_note).data)
+
+
+class ProductViewSet(TenantViewSet):
+    """FR-12.7 POS: retail stock, manager+ CRUD."""
+
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated, IsFrontDeskOrAbove]
+    queryset = Product.objects.all()
+
+
+class RingUpSaleView(APIView):
+    """FR-12.7: front-desk rings up retail stock against a member, through
+    billing.services.record_pos_sale (which itself reuses
+    create_draft_invoice -- see that function's own docstring).
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsFrontDeskOrAbove]
+
+    def post(self, request):
+        if request.gym is None:
+            return Response({"detail": "X-Gym-Id header is required."}, status=400)
+        serializer = RingUpSaleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        member = get_object_or_404(Member, pk=data["member_id"], gym=request.gym)
+        lines = [
+            SaleLineInput(product_id=line["product_id"], quantity=line["quantity"])
+            for line in data["lines"]
+        ]
+
+        try:
+            sale = record_pos_sale(request.gym, member, lines, actor=request.user)
+        except InsufficientStock as exc:
+            return Response({"detail": str(exc)}, status=400)
+
+        return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
 
 
 class SettlementReportView(APIView):

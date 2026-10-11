@@ -85,3 +85,19 @@ export const markSaasInvoicePaidByBank = (invoiceId: number): Promise<{ status: 
     method: "POST",
     url: `/api/v1/platform/saas-invoices/${invoiceId}/mark-paid-bank`,
   });
+
+// --- Leads — FR-12.6 (flat capture log, no pipeline UI exists for this to
+// hook into — see saas.models.Lead's own docstring) ------------------------
+
+export interface LeadRow {
+  id: number;
+  full_name: string;
+  phone: string;
+  email: string;
+  source: string;
+  status: "new" | "contacted" | "converted" | "lost";
+  created_at: string;
+}
+
+export const listLeads = (): Promise<LeadRow[]> =>
+  httpClient({ method: "GET", url: "/api/v1/platform/leads" });

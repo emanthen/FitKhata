@@ -4,6 +4,8 @@ services.py/exporters.py). APIViews, not ViewSets: nothing here is CRUD.
 
 from __future__ import annotations
 
+from datetime import date
+
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.http import HttpResponse
@@ -202,3 +204,35 @@ class VatSalesRegisterView(APIView):
                 f"Download it here: {url}",
             )
         return Response({"status": "queued", "download_url": url})
+
+
+class AccountingExportView(APIView):
+    """FR-12.5: daily journal CSV for Tally or Swastik -- owner-only, same
+    tightness as VatSalesRegisterView.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+    def get(self, request):
+        day_raw = request.query_params.get("date")
+        if not day_raw:
+            return Response({"detail": "'date' is required (YYYY-MM-DD)."}, status=400)
+        try:
+            day = date.fromisoformat(day_raw)
+        except ValueError:
+            return Response({"detail": "'date' must be YYYY-MM-DD."}, status=400)
+
+        fmt = request.query_params.get("format", "tally")
+        if fmt not in ("tally", "swastik"):
+            return Response({"detail": "format must be 'tally' or 'swastik'."}, status=400)
+
+        rows = services.daily_journal_rows(request.gym, day)
+        mapper = exporters.to_tally_rows if fmt == "tally" else exporters.to_swastik_rows
+        mapped_rows, fieldnames = mapper(rows)
+        data = exporters.rows_to_csv(mapped_rows, fieldnames)
+
+        response = HttpResponse(data, content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="accounting-export-{fmt}-{day.isoformat()}.csv"'
+        )
+        return response

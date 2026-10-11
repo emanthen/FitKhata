@@ -64,6 +64,16 @@ def register_member(gym: Any, actor: Any = None, **fields: Any) -> Member:
             actor=actor,
         )
         notify(member, "welcome", {"name": member.full_name}, actor=actor)
+
+        # Lazy import: same cross-app-circular-import shape as this file's
+        # other lazy imports (e.g. billing.services's fulfill_renewal_payment).
+        from publicapi.services import dispatch_webhook_event
+
+        dispatch_webhook_event(
+            gym.org,
+            "member.created",
+            {"member_id": member.pk, "member_code": member_code, "full_name": member.full_name},
+        )
         return member
 
 

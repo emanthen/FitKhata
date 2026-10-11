@@ -5,8 +5,8 @@
   "start_url": "/gate",
   "display": "fullscreen",
   "orientation": "landscape",
-  "background_color": "#1c1a14",
-  "theme_color": "#1c1a14",
+  "background_color": "#0a0e17",
+  "theme_color": "#1e40af",
   "icons": [
     {
       "src": "/icons/icon.svg",

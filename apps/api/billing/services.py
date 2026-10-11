@@ -11,7 +11,17 @@ from django.db import transaction
 from django.db.models import Sum
 
 from billing.domain.shift import expected_cash
-from billing.models import CashShift, Invoice, InvoiceCounter, InvoiceLine, Payment
+from billing.domain.vat import vat_for_invoice
+from billing.models import (
+    CashShift,
+    Invoice,
+    InvoiceCounter,
+    InvoiceLine,
+    Payment,
+    Product,
+    Sale,
+    SaleLine,
+)
 from core.domain.bs import to_bs
 from core.services import audit
 from notifications.services import notify
@@ -48,9 +58,34 @@ def create_draft_invoice(
 ) -> Invoice:
     """Allocates the next gapless invoice number for (org, fiscal_year)
     under a row lock — rule 8.
+
+    VAT is split off `total_npr` (the post-discount amount the member
+    actually owes), not the pre-discount subtotal — a discount reduces the
+    taxable base, it isn't layered on top of a VAT figure computed before
+    the discount applied. A non-VAT-registered org (gym.org.is_vat_registered
+    is False) issues no VAT at all: vat_npr stays zero and the full total
+    is taxable in the sense that it's the sale amount, not that any VAT
+    line is shown on an invoice from a business that isn't registered for it.
+
+    Always back-splits as if `total_npr` is VAT-inclusive (never adds VAT
+    on top of it), regardless of gym.org.vat_inclusive_pricing -- total_npr
+    is the one real amount already being collected (what Payment.amount_npr
+    must match), so taxable_npr + vat_npr must reconstruct it exactly; using
+    vat_for_line(..., inclusive=False) here would report a total 13% larger
+    than what was actually charged. Properly honoring "exclusive" pricing
+    means adding VAT on top when the subtotal is first computed (plan/
+    product prices, in members.domain and this POS's own pricing) before it
+    ever reaches this function -- not implemented yet in either caller, so
+    gym.org.vat_inclusive_pricing currently has no effect here.
     """
     today = today or date.today()
     fiscal_year = _fiscal_year_for(today)
+
+    if gym.org.is_vat_registered:
+        line_vat = vat_for_invoice([total_npr], inclusive=True)
+        taxable_npr, vat_npr = line_vat.taxable_npr, line_vat.vat_npr
+    else:
+        taxable_npr, vat_npr = total_npr, Decimal("0.00")
 
     with transaction.atomic():
         counter, _ = InvoiceCounter.objects.select_for_update().get_or_create(
@@ -69,6 +104,8 @@ def create_draft_invoice(
             member=member,
             subtotal_npr=subtotal_npr,
             discount_npr=discount_npr,
+            taxable_npr=taxable_npr,
+            vat_npr=vat_npr,
             total_npr=total_npr,
             bill_date=today,
             bill_date_bs=f"{bs_year:04d}-{bs_month:02d}-{bs_day:02d}",
@@ -88,6 +125,77 @@ def create_draft_invoice(
         )
         audit(invoice, "create", after={"number": number, "total_npr": str(total_npr)}, actor=actor)
         return invoice
+
+
+@dataclass
+class SaleLineInput:
+    product_id: int
+    quantity: int
+
+
+class InsufficientStock(ValueError):
+    pass
+
+
+def record_pos_sale(
+    gym: Any, member: Any, lines: list[SaleLineInput], actor: Any = None
+) -> Sale:
+    """FR-12.7: rings up retail stock against a member, through the exact
+    same create_draft_invoice() the membership-sale flow uses (rule 8
+    numbering, no parallel invoice scheme) -- then records the Sale/
+    SaleLine breakdown and decrements stock in the same transaction.
+    select_for_update on the Product rows (locked in a stable pk order, not
+    request order, to avoid a lock-ordering deadlock between two concurrent
+    POS sales that happen to ring up the same two products in opposite
+    order) makes the stock check safe under concurrent sales at the same
+    till.
+    """
+    with transaction.atomic():
+        product_ids = sorted({line.product_id for line in lines})
+        products = {
+            p.pk: p
+            for p in Product.objects.select_for_update().filter(gym=gym, pk__in=product_ids)
+        }
+
+        invoice_lines: list[InvoiceLineInput] = []
+        subtotal = Decimal("0.00")
+        for line in lines:
+            product = products.get(line.product_id)
+            if product is None or not product.is_active:
+                raise InsufficientStock(f"Product {line.product_id} is not available.")
+            if product.stock_qty < line.quantity:
+                raise InsufficientStock(f"Not enough stock for {product.name}.")
+
+            line_total = (product.price_npr * line.quantity).quantize(Decimal("0.01"))
+            invoice_lines.append(
+                InvoiceLineInput(
+                    description=product.name,
+                    quantity=line.quantity,
+                    unit_price_npr=product.price_npr,
+                    line_total_npr=line_total,
+                )
+            )
+            subtotal += line_total
+
+        invoice = create_draft_invoice(
+            gym, member, invoice_lines, subtotal, Decimal("0.00"), subtotal, actor=actor
+        )
+        sale = Sale.objects.create(org=gym.org, gym=gym, invoice=invoice, created_by=actor)
+        for line, invoice_line in zip(lines, invoice_lines, strict=True):
+            product = products[line.product_id]
+            SaleLine.objects.create(
+                org=gym.org,
+                gym=gym,
+                sale=sale,
+                product=product,
+                quantity=line.quantity,
+                unit_price_npr=invoice_line.unit_price_npr,
+                line_total_npr=invoice_line.line_total_npr,
+            )
+            product.stock_qty -= line.quantity
+            product.save(update_fields=["stock_qty"])
+
+        return sale
 
 
 def collect_payment(
@@ -130,6 +238,21 @@ def collect_payment(
                 "invoice_number": locked.invoice.number if locked.invoice else "",
             },
             actor=actor,
+        )
+
+        # Lazy import: same cross-app-circular-import shape as this module's
+        # existing lazy imports of members.services below.
+        from publicapi.services import dispatch_webhook_event
+
+        dispatch_webhook_event(
+            locked.org,
+            "payment.completed",
+            {
+                "payment_id": locked.pk,
+                "member_id": locked.member_id,
+                "amount_npr": str(locked.amount_npr),
+                "invoice_number": locked.invoice.number if locked.invoice else "",
+            },
         )
 
         referrer = locked.member.referred_by

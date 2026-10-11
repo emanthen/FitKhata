@@ -15,6 +15,7 @@ x-django-env: &django-env
   DATABASE_URL: postgres://fitkhata_app:${FITKHATA_APP_PASSWORD}@postgres:5432/fitkhata
   REDIS_URL: redis://redis:6379/0
   SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_RELEASE: ${IMAGE_TAG:-unknown}
   FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY}
   LOG_LEVEL: INFO
   AWS_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
@@ -100,7 +101,11 @@ services:
         limits:
           memory: 768M
     networks: [internal]
-    environment: *django-env
+    environment:
+      <<: *django-env
+      # H2: "(2 x CPU + 1)" -- prod-1 is 4 vCPU (set GUNICORN_WORKERS=9 in
+      # its .env), staging-1 is 2 vCPU (this default of 5 fits it as-is).
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-5}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/readyz').status==200 else 1)"]
       interval: 30s

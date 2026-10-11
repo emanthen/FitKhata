@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { tokenStore } from "@fitkhata/api-client";
 import {
   Bell,
@@ -14,6 +15,7 @@ import {
   Menu,
   PhoneCall,
   Settings,
+  ShoppingCart,
   Target,
   User,
   Users,
@@ -23,6 +25,8 @@ import {
 import { useAuth } from "@/lib/auth";
 import { Logo } from "@/components/logo";
 import { BranchSwitcher } from "@/components/branch-switcher";
+import { FeedbackButton } from "@/components/feedback-button";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ReadOnlyBanner } from "@/components/saas/read-only-banner";
 import { ImpersonationBanner } from "@/components/saas/impersonation-banner";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -37,19 +41,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
+// `label` is an "admin" namespace message key, not display text -- NavLinks
+// resolves it via useTranslations since this const is outside any
+// component (next-intl's t() needs to be called from inside one).
 type NavItem = { label: string; href: string; minRole: string | null; icon: React.ElementType };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "", minRole: null, icon: LayoutDashboard },
-  { label: "Members", href: "/members", minRole: "front_desk", icon: Users },
-  { label: "Call queue", href: "/retention/queue", minRole: "front_desk", icon: PhoneCall },
-  { label: "Retention", href: "/retention", minRole: "front_desk", icon: Target },
-  { label: "Coaching", href: "/coaching", minRole: "front_desk", icon: Dumbbell },
-  { label: "Billing", href: "/billing/shift", minRole: "front_desk", icon: CreditCard },
-  { label: "Staff", href: "/staff", minRole: "manager", icon: IdCard },
-  { label: "Reports", href: "/reports", minRole: "manager", icon: BarChart3 },
-  { label: "Notifications", href: "/notifications/log", minRole: "manager", icon: Bell },
-  { label: "Settings", href: "/settings", minRole: "owner", icon: Settings },
+  { label: "navDashboard", href: "", minRole: null, icon: LayoutDashboard },
+  { label: "navMembers", href: "/members", minRole: "front_desk", icon: Users },
+  { label: "navCallQueue", href: "/retention/queue", minRole: "front_desk", icon: PhoneCall },
+  { label: "navRetention", href: "/retention", minRole: "front_desk", icon: Target },
+  { label: "navCoaching", href: "/coaching", minRole: "front_desk", icon: Dumbbell },
+  { label: "navBilling", href: "/billing/shift", minRole: "front_desk", icon: CreditCard },
+  { label: "navPos", href: "/pos", minRole: "front_desk", icon: ShoppingCart },
+  { label: "navStaff", href: "/staff", minRole: "manager", icon: IdCard },
+  { label: "navReports", href: "/reports", minRole: "manager", icon: BarChart3 },
+  { label: "navNotifications", href: "/notifications/log", minRole: "manager", icon: Bell },
+  { label: "navSettings", href: "/settings", minRole: "owner", icon: Settings },
 ];
 
 const ROLE_RANK: Record<string, number> = { owner: 3, manager: 2, front_desk: 1, trainer: 0 };
@@ -63,6 +71,7 @@ function canSee(role: string | null, minRole: string | null): boolean {
 function NavLinks({ gymId, onNavigate }: { gymId: string; onNavigate?: () => void }) {
   const pathname = usePathname();
   const { claims } = useAuth();
+  const t = useTranslations("admin");
 
   return (
     <nav className="flex flex-col gap-0.5">
@@ -82,7 +91,7 @@ function NavLinks({ gymId, onNavigate }: { gymId: string; onNavigate?: () => voi
             }`}
           >
             <Icon size={18} strokeWidth={active ? 2.5 : 2} />
-            {item.label}
+            {t(item.label)}
           </Link>
         );
       })}
@@ -94,6 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { gymId } = useParams<{ gymId: string }>();
   const { claims, ready, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const t = useTranslations("admin");
 
   useEffect(() => {
     // Direct navigation/bookmark/shared link — make sure X-Gym-Id matches
@@ -122,7 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-3 md:hidden">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Open navigation">
+                <Button variant="ghost" size="icon" aria-label={t("openNavigation")}>
                   <Menu size={20} />
                 </Button>
               </SheetTrigger>
@@ -132,8 +142,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Logo size={24} />
                   </div>
                 </SheetTitle>
-                <div className="mb-4">
+                <div className="mb-4 flex items-center justify-between gap-2">
                   <BranchSwitcher activeGymId={gymId} />
+                  <LocaleSwitcher />
                 </div>
                 <NavLinks gymId={gymId} onNavigate={() => setMobileOpen(false)} />
               </SheetContent>
@@ -142,12 +153,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <div className="hidden md:block" />
           <div className="flex items-center gap-1">
+            <LocaleSwitcher className="mr-1" />
+            <FeedbackButton />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   className="ml-1 flex items-center gap-2 rounded-full p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Account menu"
+                  aria-label={t("accountMenu")}
                 >
                   <Avatar className="size-8">
                     <AvatarFallback className="bg-primary text-primary-foreground">
@@ -163,7 +176,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="text-destructive">
                   <LogOut size={16} className="mr-2" />
-                  Sign out
+                  {t("signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

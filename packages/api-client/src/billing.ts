@@ -275,3 +275,51 @@ export const fetchMemberInvoicePdf = (passToken: string, invoiceId: string): Pro
     url: `/api/v1/m/pass/${passToken}/invoices/${invoiceId}/pdf`,
     responseType: "blob",
   });
+
+// --- Simple POS (FR-12.7) --------------------------------------------------
+
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  price_npr: string;
+  stock_qty: number;
+  is_active: boolean;
+}
+
+export const listProducts = (): Promise<Product[] | Page<Product>> =>
+  httpClient({ method: "GET", url: "/api/v1/products/" });
+
+export const createProduct = (data: {
+  sku: string;
+  name: string;
+  price_npr: string;
+  stock_qty: number;
+}): Promise<Product> => httpClient({ method: "POST", url: "/api/v1/products/", data });
+
+export const updateProduct = (id: string, data: Partial<Product>): Promise<Product> =>
+  httpClient({ method: "PATCH", url: `/api/v1/products/${id}/`, data });
+
+export const deleteProduct = (id: string): Promise<void> =>
+  httpClient({ method: "DELETE", url: `/api/v1/products/${id}/` });
+
+export interface SaleLine {
+  id: string;
+  product: string;
+  quantity: number;
+  unit_price_npr: string;
+  line_total_npr: string;
+}
+
+export interface Sale {
+  id: string;
+  invoice: string;
+  created_by: string | null;
+  created_at: string;
+  lines: SaleLine[];
+}
+
+export const ringUpSale = (data: {
+  member_id: string;
+  lines: { product_id: string; quantity: number }[];
+}): Promise<Sale> => httpClient({ method: "POST", url: "/api/v1/billing/sales", data });

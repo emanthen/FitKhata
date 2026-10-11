@@ -7,7 +7,12 @@ from decimal import Decimal
 import pytest
 
 from billing.models import Invoice, Payment
-from billing.services import collect_payment, outstanding_dues_npr
+from billing.services import (
+    InvoiceLineInput,
+    collect_payment,
+    create_draft_invoice,
+    outstanding_dues_npr,
+)
 from core.context import system_context
 from gyms.models import Gym, Organization
 from members.models import Member, Membership, Plan
@@ -56,6 +61,97 @@ def _desk_payment(member, invoice, amount: Decimal, status=Payment.Status.PENDIN
         amount_npr=amount,
         status=status,
     )
+
+
+# --- create_draft_invoice: VAT split ----------------------------------------
+# billing.domain.vat's split functions were fully built and unit-tested in
+# isolation but never actually wired into invoice creation -- every invoice
+# carried taxable_npr=vat_npr=0 regardless of org VAT settings. These guard
+# the fix.
+
+
+def test_create_draft_invoice_leaves_taxable_equal_to_total_when_not_vat_registered(
+    gym, member
+):
+    with system_context():
+        assert gym.org.is_vat_registered is False  # fixture default
+        invoice = create_draft_invoice(
+            gym,
+            member,
+            [InvoiceLineInput("Item", 1, Decimal("1000.00"), Decimal("1000.00"))],
+            Decimal("1000.00"),
+            Decimal("0.00"),
+            Decimal("1000.00"),
+        )
+
+    assert invoice.taxable_npr == Decimal("1000.00")
+    assert invoice.vat_npr == Decimal("0.00")
+
+
+def test_create_draft_invoice_splits_vat_from_the_total_when_vat_registered(gym, member):
+    with system_context():
+        gym.org.is_vat_registered = True
+        gym.org.save(update_fields=["is_vat_registered"])
+
+        invoice = create_draft_invoice(
+            gym,
+            member,
+            [InvoiceLineInput("Item", 1, Decimal("1130.00"), Decimal("1130.00"))],
+            Decimal("1130.00"),
+            Decimal("0.00"),
+            Decimal("1130.00"),
+        )
+
+    assert invoice.taxable_npr == Decimal("1000.00")
+    assert invoice.vat_npr == Decimal("130.00")
+    assert invoice.taxable_npr + invoice.vat_npr == invoice.total_npr
+
+
+def test_create_draft_invoice_vat_split_always_reconstructs_the_total(gym, member):
+    """taxable_npr + vat_npr must equal total_npr exactly -- total_npr is
+    the one real amount already collected (what Payment.amount_npr must
+    match), so the split can never report more or less than that, whatever
+    the org's vat_inclusive_pricing display setting says (see
+    create_draft_invoice's own docstring on why that setting has no effect
+    here yet).
+    """
+    with system_context():
+        gym.org.is_vat_registered = True
+        gym.org.vat_inclusive_pricing = False
+        gym.org.save(update_fields=["is_vat_registered", "vat_inclusive_pricing"])
+
+        invoice = create_draft_invoice(
+            gym,
+            member,
+            [InvoiceLineInput("Item", 1, Decimal("1000.00"), Decimal("1000.00"))],
+            Decimal("1000.00"),
+            Decimal("0.00"),
+            Decimal("1000.00"),
+        )
+
+    assert invoice.taxable_npr + invoice.vat_npr == invoice.total_npr
+
+
+def test_create_draft_invoice_vat_is_split_from_the_post_discount_total(gym, member):
+    """A discount reduces the taxable base -- VAT is split from total_npr
+    (already post-discount), never from the pre-discount subtotal.
+    """
+    with system_context():
+        gym.org.is_vat_registered = True
+        gym.org.save(update_fields=["is_vat_registered"])
+
+        invoice = create_draft_invoice(
+            gym,
+            member,
+            [InvoiceLineInput("Item", 1, Decimal("1130.00"), Decimal("1130.00"))],
+            Decimal("1130.00"),  # subtotal (pre-discount)
+            Decimal("226.00"),  # discount (20% off)
+            Decimal("904.00"),  # total (post-discount) -- VAT splits from this
+        )
+
+    assert invoice.taxable_npr == Decimal("800.00")
+    assert invoice.vat_npr == Decimal("104.00")
+    assert invoice.taxable_npr + invoice.vat_npr == invoice.total_npr
 
 
 # --- collect_payment: desk flow (invoice already exists) -------------------

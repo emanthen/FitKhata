@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Building2, Flag, LifeBuoy, LineChart, LogOut } from "lucide-react";
+import { Bell, Building2, Flag, LifeBuoy, LineChart, LogOut, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { label: "Tenants", href: "/platform/tenants", icon: Building2 },
   { label: "Metrics", href: "/platform/metrics", icon: LineChart },
   { label: "Feature flags", href: "/platform/feature-flags", icon: Flag },
+  { label: "Leads", href: "/platform/leads", icon: UserPlus },
   { label: "Announcements", href: "/platform/announcements", icon: Bell },
   { label: "Tickets", href: "/platform/tickets", icon: LifeBuoy },
 ];

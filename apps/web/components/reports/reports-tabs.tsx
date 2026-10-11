@@ -9,6 +9,7 @@ const TABS = [
   { label: "Cohorts", href: "/cohorts" },
   { label: "Dues", href: "/dues" },
   { label: "VAT register", href: "/vat-register" },
+  { label: "Accounting export", href: "/accounting-export" },
 ];
 
 /** Shared tab row for every /reports/* sub-page — mirrors staff-tabs.tsx. */

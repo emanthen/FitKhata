@@ -16,13 +16,16 @@ from billing.views import (
     MemberRenewalCallbackView,
     MemberRenewalInitiateView,
     MemberRenewalPlansView,
+    ProductViewSet,
     ReceiptLinkPdfView,
+    RingUpSaleView,
     SendReceiptSmsView,
     SettlementReportView,
 )
 
 router = DefaultRouter()
 router.register("credit-notes", CreditNoteViewSet, basename="credit-note")
+router.register("products", ProductViewSet, basename="product")
 
 urlpatterns = [
     path("billing/payments", CollectPaymentView.as_view(), name="billing-collect-payment"),
@@ -85,5 +88,6 @@ urlpatterns = [
         MemberRenewalCallbackView.as_view(),
         name="billing-renewal-callback",
     ),
+    path("billing/sales", RingUpSaleView.as_view(), name="billing-ring-up-sale"),
     *router.urls,
 ]

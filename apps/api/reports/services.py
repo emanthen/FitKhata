@@ -16,7 +16,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from billing.domain.shift import variance
-from billing.models import CashShift, Invoice
+from billing.models import CashShift, Invoice, Payment
 from billing.services import shift_expected_cash_npr
 from core.domain.bs import month_range
 from members.models import Member, Membership
@@ -136,6 +136,84 @@ def vat_sales_register(gym: Any, fiscal_year: int) -> dict[str, Any]:
         "rows": vat_register_rows(invoices),
         "monthly_totals": vat_register_monthly_totals(invoices),
     }
+
+
+_CASH_CLEARING_LEDGER: dict[str, str] = {
+    Payment.Mode.CASH: "Cash in hand",
+    Payment.Mode.BANK: "Bank",
+    Payment.Mode.CHEQUE: "Bank",
+    Payment.Mode.ESEWA: "eSewa clearing",
+    Payment.Mode.MANUAL_ESEWA: "eSewa clearing",
+    Payment.Mode.KHALTI: "Khalti clearing",
+    Payment.Mode.FONEPAY: "Fonepay clearing",
+}
+
+
+def daily_journal_rows(gym: Any, day: date) -> list[dict[str, Any]]:
+    """FR-12.5: one debit + one-or-two credit rows per completed payment on
+    `day` -- debit the clearing ledger for however the member paid, credit
+    Sales (+ VAT Payable, if the related invoice has any) for however much
+    of that invoice this payment actually covers. ponytail: splits credit
+    amounts proportionally to this payment's share of its invoice's total,
+    so a sequence of partial payments against one invoice sums correctly
+    without double-booking -- it does not reconcile refunds/voids, which
+    this phase doesn't track per-payment yet (see billing.services's own
+    shift_expected_cash_npr docstring for the same caveat).
+    """
+    payments = (
+        Payment.objects.filter(gym=gym, status=Payment.Status.COMPLETED, created_at__date=day)
+        .select_related("invoice")
+        .order_by("created_at")
+    )
+
+    rows: list[dict[str, Any]] = []
+    for payment in payments:
+        voucher = payment.receipt_no or str(payment.transaction_uuid)
+        debit_ledger = _CASH_CLEARING_LEDGER.get(payment.mode, "Bank")
+        narration = f"Payment {voucher} via {payment.get_mode_display()}"
+
+        rows.append(
+            {
+                "date": day.isoformat(),
+                "voucher": voucher,
+                "ledger": debit_ledger,
+                "debit_npr": payment.amount_npr,
+                "credit_npr": ZERO,
+                "narration": narration,
+            }
+        )
+
+        invoice = payment.invoice
+        if invoice is not None and invoice.total_npr > 0:
+            ratio = payment.amount_npr / invoice.total_npr
+            taxable_share = (invoice.taxable_npr * ratio).quantize(Decimal("0.01"))
+            vat_share = (invoice.vat_npr * ratio).quantize(Decimal("0.01"))
+        else:
+            taxable_share, vat_share = payment.amount_npr, ZERO
+
+        rows.append(
+            {
+                "date": day.isoformat(),
+                "voucher": voucher,
+                "ledger": "Sales",
+                "debit_npr": ZERO,
+                "credit_npr": taxable_share,
+                "narration": narration,
+            }
+        )
+        if vat_share > 0:
+            rows.append(
+                {
+                    "date": day.isoformat(),
+                    "voucher": voucher,
+                    "ledger": "VAT Payable",
+                    "debit_npr": ZERO,
+                    "credit_npr": vat_share,
+                    "narration": narration,
+                }
+            )
+
+    return rows
 
 
 def dashboard_summary(gym: Any, renewals_due_days: int = 7) -> dict[str, Any]:

@@ -2,6 +2,7 @@ from django.urls import path
 
 from attendance.views import (
     GateCheckinsBatchView,
+    GateHeartbeatView,
     GatePairingCodeView,
     GatePairView,
     GateSnapshotView,
@@ -18,6 +19,7 @@ urlpatterns = [
     path("gate/pair", GatePairView.as_view(), name="gate-pair"),
     path("gate/snapshot", GateSnapshotView.as_view(), name="gate-snapshot"),
     path("gate/checkins:batch", GateCheckinsBatchView.as_view(), name="gate-checkins-batch"),
+    path("gate/heartbeat", GateHeartbeatView.as_view(), name="gate-heartbeat"),
     path("attendance/manual", ManualCheckinView.as_view(), name="attendance-manual"),
     path(
         "attendance/member-pass-links",

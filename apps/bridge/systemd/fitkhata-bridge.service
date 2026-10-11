@@ -1,0 +1,17 @@
+[Unit]
+Description=FitKhata gate hardware bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/fitkhata-bridge/dist/index.js
+WorkingDirectory=/opt/fitkhata-bridge
+Restart=on-failure
+RestartSec=5
+User=fitkhata-bridge
+Environment=NODE_ENV=production
+EnvironmentFile=-/etc/fitkhata-bridge/env
+
+[Install]
+WantedBy=multi-user.target

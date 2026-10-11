@@ -136,3 +136,18 @@ export const fetchVatRegisterExport = (
     params: { fiscal_year: fiscalYear, export: format },
     responseType: "blob",
   });
+
+// --- Accounting export — FR-12.5 (owner-only) ------------------------------
+
+export type AccountingExportFormat = "tally" | "swastik";
+
+export const fetchAccountingExport = (
+  date: string,
+  format: AccountingExportFormat
+): Promise<Blob> =>
+  httpClient({
+    method: "GET",
+    url: "/api/v1/reports/accounting-export",
+    params: { date, format },
+    responseType: "blob",
+  });

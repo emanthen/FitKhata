@@ -29,6 +29,7 @@ from attendance.services import (
     record_checkins_batch,
     record_manual_checkin,
     register_gate_device,
+    touch_device_heartbeat,
 )
 from core.context import system_context
 from core.crypto import decrypt_bytes
@@ -155,6 +156,17 @@ class GateCheckinsBatchView(APIView):
         serializer.is_valid(raise_exception=True)
         result = record_checkins_batch(request.gate_device, serializer.validated_data["checkins"])
         return Response(result)
+
+
+class GateHeartbeatView(APIView):
+    """Bridge/kiosk liveness ping -- see attendance.tasks.alert_offline_gate_devices
+    for the other side of this (owner SMS when a device goes quiet)."""
+
+    permission_classes = [IsGateDevice]
+
+    def post(self, request):
+        touch_device_heartbeat(request.gate_device)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ManualCheckinView(APIView):

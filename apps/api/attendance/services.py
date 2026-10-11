@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -77,6 +77,10 @@ def register_gate_device(gym: Any, name: str) -> tuple[GateDevice, str]:
             device_key_hash=hashlib.sha256(raw_token.encode("utf-8")).hexdigest(),
         )
     return device, raw_token
+
+
+def touch_device_heartbeat(device: GateDevice) -> None:
+    GateDevice.objects.filter(pk=device.pk).update(last_seen_at=datetime.now(tz=UTC))
 
 
 def member_dues_npr(member: Member) -> Decimal:
@@ -161,7 +165,29 @@ def record_manual_checkin(
             actor=actor,
         )
     _broadcast_checkin(attendance, member)
+    _dispatch_checkin_webhook(attendance, member)
     return attendance
+
+
+def _dispatch_checkin_webhook(attendance: Attendance, member: Member) -> None:
+    """Best-effort, same reasoning as _broadcast_checkin — a webhook
+    dispatch failing must never fail the check-in itself.
+    """
+    from publicapi.services import dispatch_webhook_event
+
+    try:
+        dispatch_webhook_event(
+            attendance.org,
+            "checkin.created",
+            {
+                "member_id": member.pk,
+                "member_code": member.member_code,
+                "check_in_at": attendance.check_in_at.isoformat(),
+                "source": attendance.source,
+            },
+        )
+    except Exception:
+        pass
 
 
 def record_checkins_batch(device: GateDevice, rows: list[dict[str, Any]]) -> dict[str, list]:
@@ -223,5 +249,6 @@ def record_checkins_batch(device: GateDevice, rows: list[dict[str, Any]]) -> dic
 
     for attendance, member in to_broadcast:
         _broadcast_checkin(attendance, member)
+        _dispatch_checkin_webhook(attendance, member)
 
     return {"accepted": accepted, "duplicates": duplicates, "rejected": rejected}

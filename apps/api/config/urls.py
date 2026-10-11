@@ -40,4 +40,6 @@ urlpatterns = [
     path("api/v1/", include("staff.urls")),
     path("api/v1/", include("reports.urls")),
     path("api/v1/", include("saas.urls")),
+    path("api/v1/", include("publicapi.urls")),
+    path("api/public/v1/", include("publicapi.public_urls")),
 ]

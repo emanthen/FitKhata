@@ -14,6 +14,7 @@ from attendance.services import (
     record_checkins_batch,
     record_manual_checkin,
     register_gate_device,
+    touch_device_heartbeat,
 )
 from billing.services import InvoiceLineInput, create_draft_invoice
 from core.context import system_context
@@ -76,6 +77,16 @@ def test_register_gate_device_returns_device_and_token(gym):
     assert len(token) > 20
     # The stored hash must not be (and cannot be reversed to) the raw token.
     assert device.device_key_hash != token
+
+
+def test_touch_device_heartbeat_sets_last_seen_at(gym):
+    device, _ = register_gate_device(gym, "Front Gate")
+    assert device.last_seen_at is None
+
+    touch_device_heartbeat(device)
+
+    device.refresh_from_db()
+    assert device.last_seen_at is not None
 
 
 # --- classify_checkin --------------------------------------------------

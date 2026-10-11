@@ -42,10 +42,13 @@ class TenantMiddleware:
         request.gym = None  # type: ignore[attr-defined]
         request.role = None  # type: ignore[attr-defined]
         request.gate_device = None  # type: ignore[attr-defined]
+        request.api_key = None  # type: ignore[attr-defined]
 
         auth_header = request.META.get("HTTP_AUTHORIZATION", "")
         if auth_header.startswith("Device "):
             return self._handle_device_auth(request, auth_header)
+        if auth_header.startswith("ApiKey "):
+            return self._handle_api_key_auth(request, auth_header)
 
         user = self._authenticate(request)
         if user is None:
@@ -115,6 +118,40 @@ class TenantMiddleware:
                 cursor.execute("SELECT set_config('app.user_id', '', true)")
                 cursor.execute(
                     "SELECT set_config('app.gym_ids', %s, true)", [str(device.gym_id)]
+                )
+            return self.get_response(request)
+
+    def _handle_api_key_auth(self, request: HttpRequest, auth_header: str) -> HttpResponse:
+        """A public API key (FR-12.3) belongs to an org, not a single gym --
+        scopes app.gym_ids to every gym under that org, reusing
+        core.context.tenant_context's existing multi-gym RLS support (just
+        inlined here, same as _handle_device_auth, since the transaction is
+        already open). request.gym stays None; views filter by
+        request.api_key.org directly.
+        """
+        from publicapi.authentication import authenticate_api_key
+
+        api_key = authenticate_api_key(auth_header)
+        if api_key is None:
+            return self.get_response(request)
+
+        from publicapi.services import touch_api_key_last_used
+
+        touch_api_key_last_used(api_key)
+        request.api_key = api_key  # type: ignore[attr-defined]
+
+        from core.context import system_context
+        from gyms.models import Gym
+
+        with system_context():
+            gym_ids = list(Gym.objects.filter(org=api_key.org).values_list("pk", flat=True))
+
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT set_config('app.user_id', '', true)")
+                cursor.execute(
+                    "SELECT set_config('app.gym_ids', %s, true)",
+                    [",".join(str(gym_id) for gym_id in gym_ids)],
                 )
             return self.get_response(request)
 

@@ -5,7 +5,17 @@ import json
 from rest_framework import serializers
 
 from billing.domain.shift import variance
-from billing.models import CashShift, CreditNote, GatewayCredential, Invoice, InvoiceLine, Payment
+from billing.models import (
+    CashShift,
+    CreditNote,
+    GatewayCredential,
+    Invoice,
+    InvoiceLine,
+    Payment,
+    Product,
+    Sale,
+    SaleLine,
+)
 from billing.services import shift_expected_cash_npr
 from core.crypto import encrypt_bytes
 
@@ -191,3 +201,41 @@ class CreditNoteSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "approved_by", "approved_at", "created_at"]
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ["id", "sku", "name", "price_npr", "stock_qty", "is_active"]
+        read_only_fields = ["id"]
+
+
+class SaleLineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SaleLine
+        fields = ["id", "product", "quantity", "unit_price_npr", "line_total_npr"]
+        read_only_fields = fields
+
+
+class SaleSerializer(serializers.ModelSerializer):
+    lines = SaleLineSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Sale
+        fields = ["id", "invoice", "created_by", "created_at", "lines"]
+        read_only_fields = fields
+
+
+class SaleLineInputSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class RingUpSaleSerializer(serializers.Serializer):
+    member_id = serializers.IntegerField()
+    lines = SaleLineInputSerializer(many=True)
+
+    def validate_lines(self, value: list[dict]) -> list[dict]:
+        if not value:
+            raise serializers.ValidationError("At least one line is required.")
+        return value

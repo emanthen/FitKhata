@@ -8,6 +8,6 @@
     "build": "pnpm -r build"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["sharp"]
+    "onlyBuiltDependencies": ["sharp", "better-sqlite3", "keytar", "@serialport/bindings-cpp"]
   }
 }

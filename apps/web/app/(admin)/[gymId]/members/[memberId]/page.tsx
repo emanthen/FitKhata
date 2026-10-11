@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -20,7 +20,7 @@ import {
   type PaymentMode,
 } from "@fitkhata/api-client";
 import type { Invoice } from "@fitkhata/api-client";
-import { Check, FileText, MessageSquareText, Receipt, Wallet, X } from "lucide-react";
+import { Check, FileText, MessageSquareText, Printer, Receipt, Wallet, X } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getBridgePrintConfig, printReceiptViaBridge } from "@/lib/bridge-print";
 import { useAuth } from "@/lib/auth";
 import { formatNpr } from "@/lib/money";
 
@@ -74,6 +75,13 @@ export default function MemberProfilePage() {
   const [openPanel, setOpenPanel] = useState<{ invoiceId: string; kind: "pay" | "void" | "cn" } | null>(
     null
   );
+  const [bridgeReady, setBridgeReady] = useState(false);
+  const [printingId, setPrintingId] = useState<string | null>(null);
+  const [printError, setPrintError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBridgeReady(getBridgePrintConfig() !== null);
+  }, []);
 
   function invalidateInvoices() {
     queryClient.invalidateQueries({ queryKey: ["invoices", memberId] });
@@ -111,6 +119,26 @@ export default function MemberProfilePage() {
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  async function printToThermalPrinter(inv: Invoice) {
+    setPrintError(null);
+    setPrintingId(inv.id);
+    try {
+      await printReceiptViaBridge({
+        gymName: "FitKhata", // this page doesn't have the gym's own display name in scope yet
+        titleNe: "रसिद",
+        lines: inv.lines.map((l) => ({
+          label: `${l.description} x${l.quantity}`,
+          value: formatNpr(l.line_total_npr),
+        })),
+        totalNpr: formatNpr(inv.total_npr, { symbol: true }),
+      });
+    } catch (err) {
+      setPrintError(err instanceof Error ? err.message : "Print failed.");
+    } finally {
+      setPrintingId(null);
+    }
   }
 
   return (
@@ -169,6 +197,7 @@ export default function MemberProfilePage() {
           <CardTitle>Invoices &amp; dues</CardTitle>
         </CardHeader>
         <CardContent>
+          {printError && <p className="mb-2 text-sm text-destructive">{printError}</p>}
           <ul className="divide-y">
             {invoiceList.map((inv) => {
               const pendingNotes = creditNoteList.filter(
@@ -200,6 +229,18 @@ export default function MemberProfilePage() {
                       <FileText size={13} strokeWidth={2} data-icon="inline-start" />
                       PDF
                     </Button>
+                    {bridgeReady && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                        disabled={printingId === inv.id}
+                        onClick={() => printToThermalPrinter(inv)}
+                      >
+                        <Printer size={13} strokeWidth={2} data-icon="inline-start" />
+                        {printingId === inv.id ? "Printing..." : "Print"}
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

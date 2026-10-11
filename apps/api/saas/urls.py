@@ -4,8 +4,10 @@ from saas.views import (
     AnnouncementBroadcastView,
     DeleteAccountView,
     ExportDataView,
+    FacebookLeadWebhookView,
     FeatureFlagListView,
     ImpersonateView,
+    LeadListView,
     MarkInvoicePaidBankView,
     MetricsView,
     SaasInvoiceCallbackView,
@@ -61,5 +63,12 @@ urlpatterns = [
         "platform/saas-invoices/<int:invoice_id>/mark-paid-bank",
         MarkInvoicePaidBankView.as_view(),
         name="platform-mark-paid-bank",
+    ),
+    path("platform/leads", LeadListView.as_view(), name="platform-leads"),
+    # --- webhooks (no auth — signature/verify-token is the auth) ---
+    path(
+        "webhooks/facebook-leads",
+        FacebookLeadWebhookView.as_view(),
+        name="webhooks-facebook-leads",
     ),
 ]

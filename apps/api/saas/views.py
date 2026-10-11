@@ -5,10 +5,14 @@ IsPlatformStaff, never gym-scoped).
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from django.conf import settings
 from django.db.models import Count
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -23,7 +27,7 @@ from gyms.models import Organization
 from notifications.providers import email as email_provider
 from notifications.providers import whatsapp as whatsapp_provider
 from saas import gateways, services
-from saas.models import FeatureFlag, SaasInvoice, Subscription, SupportTicket
+from saas.models import FeatureFlag, Lead, SaasInvoice, Subscription, SupportTicket
 from saas.permissions import IsPlatformStaff
 
 _PROVIDERS = (
@@ -504,3 +508,74 @@ class MarkInvoicePaidBankView(APIView):
             invoice = get_object_or_404(SaasInvoice, pk=invoice_id)
             services.confirm_saas_invoice_payment(invoice, paid_via="bank", actor=request.user)
         return Response({"status": "paid"})
+
+
+def _verify_facebook_signature(request_body: bytes, signature_header: str | None) -> bool:
+    """Same shape as notifications.providers.whatsapp.verify_webhook_signature
+    -- a separate copy rather than a shared generic helper, since this is the
+    only other caller and it needs a different settings key.
+    """
+    if not signature_header or not signature_header.startswith("sha256="):
+        return False
+    expected = hmac.new(
+        settings.FACEBOOK_APP_SECRET.encode("utf-8"), request_body, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature_header.removeprefix("sha256="))
+
+
+class FacebookLeadWebhookView(APIView):
+    """FR-12.6. GET is Meta's verify-token handshake (same mechanism as
+    notifications.views.WhatsAppWebhookView); POST delivers one
+    `leadgen_id` per changed lead, NOT the lead's actual field data --
+    Meta's leadgen webhook is a notification-only ping, and resolving it to
+    a name/phone/email requires a separate authenticated Graph API call
+    (GET /{leadgen_id} with a Page access token) that isn't wired up this
+    phase. This stores whatever the notification itself contains
+    (leadgen_id, form_id, timestamps) in raw_payload so staff can look up
+    the lead manually in Meta's own Lead Ads form response list; full_name/
+    phone/email stay blank unless a future Graph API integration fills
+    them in. AllowAny: Meta can't send our auth headers, the signature IS
+    the authentication.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        if (
+            request.query_params.get("hub.verify_token")
+            == settings.FACEBOOK_LEAD_WEBHOOK_VERIFY_TOKEN
+        ):
+            return HttpResponse(request.query_params.get("hub.challenge", ""))
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def post(self, request):
+        if not _verify_facebook_signature(request.body, request.headers.get("X-Hub-Signature-256")):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        with system_context():
+            created = 0
+            for entry in request.data.get("entry", []):
+                for change in entry.get("changes", []):
+                    if change.get("field") != "leadgen":
+                        continue
+                    Lead.objects.create(raw_payload=change.get("value", {}))
+                    created += 1
+
+        return Response({"created": created})
+
+
+class LeadListView(APIView):
+    """Flat capture log for platform staff -- see Lead's own docstring on
+    why there's no pipeline/stage UI here.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsPlatformStaff]
+
+    def get(self, request):
+        with system_context():
+            leads = list(
+                Lead.objects.order_by("-created_at").values(
+                    "id", "full_name", "phone", "email", "source", "status", "created_at"
+                )
+            )
+        return Response(leads)

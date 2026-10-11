@@ -8,7 +8,13 @@
 		X-Frame-Options "DENY"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
-		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# camera=(self): the gate kiosk PWA ((gate)/gate route group) needs
+		# getUserMedia() for its QR scanner (@zxing/browser, Phase 3) --
+		# camera=() would silently block that for every origin including
+		# same-origin, since DOMAIN_APP serves both the kiosk and the
+		# regular tenant/member pages. No third-party content is ever
+		# embedded here, so same-origin camera access carries no real risk.
+		Permissions-Policy "camera=(self), microphone=(), geolocation=()"
 		Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://{$DOMAIN_API} wss://{$DOMAIN_API}; frame-ancestors 'none'; base-uri 'self'"
 		-Server
 		-X-Powered-By

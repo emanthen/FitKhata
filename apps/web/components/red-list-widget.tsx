@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { listMembers, type Member, type Page } from "@fitkhata/api-client";
 import { ArrowRight, TriangleAlert } from "lucide-react";
 
@@ -10,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function RedListWidget() {
   const { gymId } = useParams<{ gymId: string }>();
+  const t = useTranslations("admin");
   const query = useQuery({
     queryKey: ["members", "red-list-widget"],
     queryFn: () => listMembers({ risk_state: "red_list" }) as Promise<Page<Member> | Member[]>,
@@ -28,7 +30,7 @@ export function RedListWidget() {
     >
       <div className="flex items-center gap-1.5 text-destructive">
         <TriangleAlert size={14} strokeWidth={2} />
-        <p className="text-xs font-medium">Red list</p>
+        <p className="text-xs font-medium">{t("redListTitle")}</p>
       </div>
 
       {query.isLoading ? (
@@ -49,11 +51,11 @@ export function RedListWidget() {
 
       {members.length > 5 && (
         <p className="mt-1.5 flex items-center gap-1 text-xs text-destructive">
-          +{members.length - 5} more <ArrowRight size={12} strokeWidth={2} />
+          {t("redListMore", { count: members.length - 5 })} <ArrowRight size={12} strokeWidth={2} />
         </p>
       )}
       {members.length === 0 && !query.isLoading && (
-        <p className="mt-2 text-sm text-muted-foreground">Nobody on the red list.</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("redListEmpty")}</p>
       )}
     </Link>
   );

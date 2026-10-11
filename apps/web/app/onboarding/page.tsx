@@ -6,14 +6,25 @@ import {
   createGym,
   createInvite,
   createOrganization,
+  createPlan,
   reissueTokens,
   tokenStore,
 } from "@fitkhata/api-client";
-import { TriangleAlert } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Check,
+  LayoutDashboard,
+  MapPin,
+  Send,
+  Ticket,
+  TriangleAlert,
+  UserPlus,
+} from "lucide-react";
 
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,7 +37,36 @@ import {
 
 type Step = 1 | 2 | 3 | 4;
 
-const STEP_LABELS = ["Organization", "First branch", "Plans", "Invite staff"] as const;
+const STEPS = [
+  {
+    label: "Organization",
+    description: "Your billing account and legal details.",
+    icon: Building2,
+  },
+  {
+    label: "First branch",
+    description: "The location members and staff will check in to.",
+    icon: MapPin,
+  },
+  {
+    label: "Plans",
+    description: "What you charge, for how long.",
+    icon: Ticket,
+  },
+  {
+    label: "Invite staff",
+    description: "Get your team logged in.",
+    icon: UserPlus,
+  },
+] as const;
+
+const PLAN_TEMPLATES = [
+  { key: "monthly", name: "Monthly", durationDays: 30 },
+  { key: "quarterly", name: "3 Months", durationDays: 90 },
+  { key: "annual", name: "12 Months", durationDays: 365 },
+] as const;
+
+type PlanSelection = { checked: boolean; price: string };
 
 // Mandatory TOTP enrollment (see /totp-setup) is a full-page navigation away
 // from this wizard, which would otherwise lose orgId/step and restart at
@@ -53,8 +93,16 @@ export default function OnboardingPage() {
 
   const [gymCode, setGymCode] = useState("");
   const [gymName, setGymName] = useState("");
+  const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [phone, setPhone] = useState("");
   const [gymId, setGymId] = useState<string | null>(null);
+
+  const [planSelections, setPlanSelections] = useState<Record<string, PlanSelection>>(
+    Object.fromEntries(
+      PLAN_TEMPLATES.map((p) => [p.key, { checked: p.key === "monthly", price: "" }])
+    )
+  );
 
   const [inviteRole, setInviteRole] = useState("front_desk");
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -97,13 +145,51 @@ export default function OnboardingPage() {
     setError(null);
     setLoading(true);
     try {
-      const gym = await createGym({ org: orgId, code: gymCode, name: gymName, city });
+      const gym = await createGym({ org: orgId, code: gymCode, name: gymName, address, city, phone });
       setGymId(gym.id);
       tokenStore.setActiveGymId(gym.id);
       setStep(3);
       tokenStore.setOnboardingProgress({ step: 3, orgId });
     } catch {
       setError("Couldn't create the branch — the code may already be taken.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function updatePlanSelection(key: string, patch: Partial<PlanSelection>) {
+    setPlanSelections((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  }
+
+  async function createPlansStep(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const toCreate = PLAN_TEMPLATES.filter(
+      (p) => planSelections[p.key].checked && planSelections[p.key].price.trim()
+    );
+    if (toCreate.length === 0) {
+      setStep(4);
+      tokenStore.setOnboardingProgress({ step: 4, orgId });
+      return;
+    }
+    setLoading(true);
+    try {
+      for (const plan of toCreate) {
+        await createPlan({
+          name: plan.name,
+          duration_days: plan.durationDays,
+          price_npr: planSelections[plan.key].price,
+          joining_fee_npr: "0",
+          access_hours: {},
+          pt_sessions: 0,
+          max_freeze_days: 0,
+          is_active: true,
+        });
+      }
+      setStep(4);
+      tokenStore.setOnboardingProgress({ step: 4, orgId });
+    } catch {
+      setError("Couldn't create one of those plans — check the prices and try again.");
     } finally {
       setLoading(false);
     }
@@ -125,41 +211,81 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="font-dashboard mx-auto max-w-lg space-y-6 px-4 py-12">
-      <Logo size={26} />
+    <div className="font-dashboard grid min-h-screen lg:grid-cols-[360px_1fr]">
+      <aside className="hidden flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
+        <div>
+          <div className="text-white">
+            <Logo size={26} />
+          </div>
+          <ol className="mt-12 space-y-7">
+            {STEPS.map((s, i) => {
+              const n = (i + 1) as Step;
+              const Icon = s.icon;
+              const done = step > n;
+              const current = step === n;
+              return (
+                <li key={s.label} className="flex items-start gap-3">
+                  <span
+                    className={`flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                      current
+                        ? "border-white bg-white text-primary"
+                        : done
+                          ? "border-white/40 bg-white/15 text-white"
+                          : "border-white/25 text-white/50"
+                    }`}
+                  >
+                    {done ? <Check size={15} strokeWidth={2.5} /> : <Icon size={15} strokeWidth={2} />}
+                  </span>
+                  <div className={current ? "text-white" : done ? "text-white/80" : "text-white/45"}>
+                    <p className="text-sm font-medium">{s.label}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed">{s.description}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </aside>
 
-      <ol className="flex gap-1.5">
-        {STEP_LABELS.map((label, i) => {
-          const n = (i + 1) as Step;
+      <main className="mx-auto flex w-full max-w-xl flex-col justify-center gap-6 px-4 py-12 lg:px-16">
+        <div className="lg:hidden">
+          <Logo size={26} />
+        </div>
+
+        {(() => {
+          const s = STEPS[step - 1];
+          const Icon = s.icon;
           return (
-            <li
-              key={label}
-              className={`flex-1 rounded-md px-2 py-1.5 text-center text-xs font-medium transition-colors ${
-                step === n
-                  ? "bg-primary text-primary-foreground"
-                  : step > n
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {n}. {label}
-            </li>
+            <div className="flex items-center gap-3.5">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Icon size={20} strokeWidth={2} />
+              </span>
+              <div>
+                <p className="font-dashboard-mono text-xs text-muted-foreground">
+                  Step {step} of {STEPS.length}
+                </p>
+                <h1 className="text-xl font-semibold tracking-tight">{s.label}</h1>
+              </div>
+            </div>
           );
-        })}
-      </ol>
+        })()}
 
-      {error && (
-        <p className="flex items-center gap-1.5 text-sm text-destructive">
-          <TriangleAlert size={14} strokeWidth={2} />
-          {error}
-        </p>
-      )}
+        {error && (
+          <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <TriangleAlert size={14} strokeWidth={2} />
+            {error}
+          </p>
+        )}
 
-      {step === 1 && (
+        {step === 1 && (
         <Card>
+          <CardHeader>
+            <p className="text-sm text-muted-foreground">
+              One organization can run several branches under the same billing account.
+            </p>
+          </CardHeader>
           <CardContent>
             <form onSubmit={createOrgStep} className="space-y-3">
-              <h2 className="text-lg font-semibold tracking-tight">Your organization</h2>
               <Input
                 placeholder="Organization name"
                 value={orgName}
@@ -180,8 +306,13 @@ export default function OnboardingPage() {
                 />
                 VAT registered
               </label>
-              <Button type="submit" disabled={loading}>
-                {loading ? "..." : "Next"}
+              <Button type="submit" disabled={loading} size="lg" className="h-11 w-full gap-1.5">
+                {loading ? "..." : (
+                  <>
+                    Next
+                    <ArrowRight size={16} strokeWidth={2} />
+                  </>
+                )}
               </Button>
             </form>
           </CardContent>
@@ -190,9 +321,13 @@ export default function OnboardingPage() {
 
       {step === 2 && (
         <Card>
+          <CardHeader>
+            <p className="text-sm text-muted-foreground">
+              This is what members and staff will see as their gym location.
+            </p>
+          </CardHeader>
           <CardContent>
             <form onSubmit={createGymStep} className="space-y-3">
-              <h2 className="text-lg font-semibold tracking-tight">Your first branch</h2>
               <Input
                 placeholder="Branch code (e.g. KTM1)"
                 value={gymCode}
@@ -208,13 +343,33 @@ export default function OnboardingPage() {
                 required
               />
               <Input
-                placeholder="City"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+                placeholder="Street address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
                 className="h-11"
               />
-              <Button type="submit" disabled={loading}>
-                {loading ? "..." : "Next"}
+              <div className="flex gap-3">
+                <Input
+                  placeholder="City"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="h-11"
+                />
+                <Input
+                  type="tel"
+                  placeholder="Branch phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-11"
+                />
+              </div>
+              <Button type="submit" disabled={loading} size="lg" className="h-11 w-full gap-1.5">
+                {loading ? "..." : (
+                  <>
+                    Next
+                    <ArrowRight size={16} strokeWidth={2} />
+                  </>
+                )}
               </Button>
             </form>
           </CardContent>
@@ -223,32 +378,70 @@ export default function OnboardingPage() {
 
       {step === 3 && (
         <Card>
-          <CardContent className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">Membership plans</h2>
+          <CardHeader>
             <p className="text-sm text-muted-foreground">
-              We&apos;ll set up default membership plans for you here - this comes with billing, in
-              a later release. You can skip this for now and add plans afterward.
+              Set a price for the durations you sell. Leave a price blank to skip it - you can
+              always add more plans later from Settings.
             </p>
-            <Button
-              type="button"
-              onClick={() => {
-                setStep(4);
-                tokenStore.setOnboardingProgress({ step: 4, orgId });
-              }}
-            >
-              Next
-            </Button>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={createPlansStep} className="space-y-4">
+              <div className="space-y-2">
+                {PLAN_TEMPLATES.map((plan) => {
+                  const selection = planSelections[plan.key];
+                  return (
+                    <div
+                      key={plan.key}
+                      className="flex items-center gap-3 rounded-lg border px-3 py-2.5"
+                    >
+                      <Checkbox
+                        checked={selection.checked}
+                        onCheckedChange={(checked) =>
+                          updatePlanSelection(plan.key, { checked: checked === true })
+                        }
+                      />
+                      <span className="w-24 shrink-0 text-sm">{plan.name}</span>
+                      <div className="flex flex-1 items-center gap-1.5">
+                        <span className="text-sm text-muted-foreground">Rs</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Price"
+                          value={selection.price}
+                          onChange={(e) => updatePlanSelection(plan.key, { price: e.target.value })}
+                          disabled={!selection.checked}
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <Button type="submit" disabled={loading} size="lg" className="h-11 w-full gap-1.5">
+                {loading ? "..." : (
+                  <>
+                    Next
+                    <ArrowRight size={16} strokeWidth={2} />
+                  </>
+                )}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       )}
 
       {step === 4 && (
         <Card>
+          <CardHeader>
+            <p className="text-sm text-muted-foreground">
+              Generates a one-time link that sets up their login - send it however you like.
+            </p>
+          </CardHeader>
           <CardContent className="space-y-4">
-            <h2 className="text-lg font-semibold tracking-tight">Invite your team</h2>
             <form onSubmit={sendInvite} className="flex gap-2">
               <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger className="h-9 flex-1">
+                <SelectTrigger className="h-11 flex-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -257,8 +450,13 @@ export default function OnboardingPage() {
                   <SelectItem value="trainer">Trainer</SelectItem>
                 </SelectContent>
               </Select>
-              <Button type="submit" disabled={loading}>
-                {loading ? "..." : "Create invite link"}
+              <Button type="submit" disabled={loading} size="lg" className="h-11 shrink-0 gap-1.5">
+                {loading ? "..." : (
+                  <>
+                    <Send size={15} strokeWidth={2} />
+                    Create link
+                  </>
+                )}
               </Button>
             </form>
             {inviteLink && (
@@ -273,16 +471,20 @@ export default function OnboardingPage() {
             <Button
               type="button"
               variant="outline"
+              size="lg"
+              className="h-11 w-full gap-1.5"
               onClick={() => {
                 tokenStore.clearOnboardingProgress();
                 if (gymId) router.push(`/${gymId}`);
               }}
             >
+              <LayoutDashboard size={16} strokeWidth={2} />
               Done - go to dashboard
             </Button>
           </CardContent>
         </Card>
       )}
-    </main>
+      </main>
+    </div>
   );
 }

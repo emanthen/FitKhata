@@ -7,12 +7,21 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@noble/ed25519": "^2.1.0",
+    "keytar": "^7.9.0",
+    "node-thermal-printer": "^4.4.4",
+    "node-windows": "^1.0.0-beta.8",
+    "serialport": "^13.0.0",
+    "sharp": "^0.35.5"
+  },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "@types/node": "^22.10.0",
     "tsx": "^4.19.0",
-    "@types/node": "^22.10.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.8"
   }
 }

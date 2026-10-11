@@ -1,6 +1,7 @@
 from django.urls import path
 
 from reports.views import (
+    AccountingExportView,
     AttendanceHeatmapView,
     CohortRetentionView,
     DashboardSummaryView,
@@ -36,4 +37,9 @@ urlpatterns = [
     ),
     path("reports/dues-ageing", DuesAgeingView.as_view(), name="reports-dues-ageing"),
     path("reports/vat-register", VatSalesRegisterView.as_view(), name="reports-vat-register"),
+    path(
+        "reports/accounting-export",
+        AccountingExportView.as_view(),
+        name="reports-accounting-export",
+    ),
 ]

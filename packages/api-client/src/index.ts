@@ -16,3 +16,4 @@ export * from "./coaching";
 export * from "./reports";
 export * from "./saas";
 export * from "./platform";
+export * from "./publicapi";
