@@ -10,10 +10,19 @@ import {
   type StaffProfile,
   type StaffShift,
 } from "@fitkhata/api-client";
+import { CalendarClock, IdCard, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StaffTabs } from "@/components/staff/staff-tabs";
 
 function toList<T>(data: T[] | { results: T[] } | undefined): T[] {
@@ -60,77 +69,92 @@ export default function RosterPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">Staff</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <IdCard size={18} strokeWidth={2} className="text-primary" />
+        Staff
+      </h1>
       <StaffTabs />
 
-      <form onSubmit={submit} className="flex flex-wrap items-end gap-3 rounded border p-3">
-        <div className="space-y-1">
-          <Label htmlFor="roster-staff">Staff</Label>
-          <select
-            id="roster-staff"
-            value={staffId}
-            onChange={(e) => setStaffId(e.target.value)}
-            className="h-9 w-48 rounded border bg-background px-2 text-sm"
-            required
-          >
-            <option value="" disabled>
-              Choose...
-            </option>
-            {staffList.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.full_name || s.badge_code}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="roster-date">Date</Label>
-          <Input
-            id="roster-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="roster-start">Start</Label>
-          <Input
-            id="roster-start"
-            type="time"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className="w-28"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="roster-end">End</Label>
-          <Input
-            id="roster-end"
-            type="time"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            className="w-28"
-          />
-        </div>
-        <Button type="submit">Add shift</Button>
-      </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <Card>
+        <CardContent>
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="roster-staff">Staff</Label>
+              <Select value={staffId} onValueChange={setStaffId}>
+                <SelectTrigger id="roster-staff" className="h-8 w-48 text-sm">
+                  <SelectValue placeholder="Choose..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffList.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.full_name || s.badge_code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="roster-date">Date</Label>
+              <Input
+                id="roster-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="h-8"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="roster-start">Start</Label>
+              <Input
+                id="roster-start"
+                type="time"
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+                className="h-8 w-28"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="roster-end">End</Label>
+              <Input
+                id="roster-end"
+                type="time"
+                value={end}
+                onChange={(e) => setEnd(e.target.value)}
+                className="h-8 w-28"
+              />
+            </div>
+            <Button type="submit" size="sm">
+              Add shift
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
-      <ul className="space-y-1">
-        {shifts.map((shift) => (
-          <li
-            key={shift.id}
-            className="flex items-center justify-between rounded border px-3 py-1.5 text-sm"
-          >
-            <span>{staffLabel(shift.staff)}</span>
-            <span className="opacity-70">
-              {shift.date} &middot; {shift.start}&ndash;{shift.end}
-            </span>
-          </li>
-        ))}
-        {shifts.length === 0 && <li className="text-sm opacity-60">No shifts scheduled.</li>}
-      </ul>
+      <Card>
+        <CardContent>
+          <ul className="divide-y">
+            {shifts.map((shift) => (
+              <li key={shift.id} className="flex items-center justify-between py-2 text-sm">
+                <span>{staffLabel(shift.staff)}</span>
+                <span className="font-dashboard-mono flex items-center gap-1.5 text-muted-foreground">
+                  <CalendarClock size={13} strokeWidth={2} />
+                  {shift.date} &middot; {shift.start}&ndash;{shift.end}
+                </span>
+              </li>
+            ))}
+            {shifts.length === 0 && (
+              <li className="py-2 text-sm text-muted-foreground">No shifts scheduled.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -7,10 +7,19 @@ import {
   type BroadcastSegment,
   type NotificationChannel,
 } from "@fitkhata/api-client";
+import { CircleCheck, Megaphone, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatNpr } from "@/lib/money";
 
 const SEGMENTS: { value: BroadcastSegment; label: string; needsValue: boolean }[] = [
@@ -81,8 +90,11 @@ export default function BroadcastComposerPage() {
 
   if (sent) {
     return (
-      <div className="max-w-md space-y-3">
-        <h1 className="text-2xl font-semibold">Broadcast sent</h1>
+      <div className="max-w-md space-y-4">
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <CircleCheck size={18} strokeWidth={2} className="text-primary" />
+          Broadcast sent
+        </h1>
         <p className="text-sm">
           Reached {sent.recipient_count} member{sent.recipient_count === 1 ? "" : "s"} for{" "}
           {formatNpr(sent.cost_npr, { symbol: true })}.
@@ -94,97 +106,119 @@ export default function BroadcastComposerPage() {
 
   return (
     <div className="max-w-xl space-y-4">
-      <h1 className="text-2xl font-semibold">Broadcast</h1>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <Megaphone size={18} strokeWidth={2} className="text-primary" />
+        Broadcast
+      </h1>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
-      <form onSubmit={preview} className="space-y-3 rounded border p-3">
-        <div className="flex flex-wrap gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="segment">Segment</Label>
-            <select
-              id="segment"
-              value={segment}
-              onChange={(e) => {
-                setSegment(e.target.value as BroadcastSegment);
-                resetEstimate();
-              }}
-              className="h-9 rounded border px-2 text-sm"
-            >
-              {SEGMENTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {needsValue && (
-            <div className="space-y-1">
-              <Label htmlFor="segment-value">Value</Label>
-              <Input
-                id="segment-value"
-                value={segmentValue}
-                onChange={(e) => {
-                  setSegmentValue(e.target.value);
-                  resetEstimate();
-                }}
-                className="w-40"
+      <Card>
+        <CardContent>
+          <form onSubmit={preview} className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="segment">Segment</Label>
+                <Select
+                  value={segment}
+                  onValueChange={(v) => {
+                    setSegment(v as BroadcastSegment);
+                    resetEstimate();
+                  }}
+                >
+                  <SelectTrigger id="segment" className="h-8 w-44 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SEGMENTS.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {needsValue && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="segment-value">Value</Label>
+                  <Input
+                    id="segment-value"
+                    value={segmentValue}
+                    onChange={(e) => {
+                      setSegmentValue(e.target.value);
+                      resetEstimate();
+                    }}
+                    className="h-8 w-40"
+                  />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="channel">Channel</Label>
+                <Select
+                  value={channel}
+                  onValueChange={(v) => {
+                    setChannel(v as NotificationChannel);
+                    resetEstimate();
+                  }}
+                >
+                  <SelectTrigger id="channel" className="h-8 w-32 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CHANNELS.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="body-ne">Message (Nepali)</Label>
+              <textarea
+                id="body-ne"
+                value={bodyNe}
+                onChange={(e) => setBodyNe(e.target.value)}
+                className="h-20 w-full rounded-lg border border-input bg-transparent p-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                required
               />
             </div>
-          )}
-          <div className="space-y-1">
-            <Label htmlFor="channel">Channel</Label>
-            <select
-              id="channel"
-              value={channel}
-              onChange={(e) => {
-                setChannel(e.target.value as NotificationChannel);
-                resetEstimate();
-              }}
-              className="h-9 rounded border px-2 text-sm"
-            >
-              {CHANNELS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="body-en">Message (English)</Label>
+              <textarea
+                id="body-en"
+                value={bodyEn}
+                onChange={(e) => setBodyEn(e.target.value)}
+                className="h-20 w-full rounded-lg border border-input bg-transparent p-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                required
+              />
+            </div>
 
-        <div className="space-y-1">
-          <Label htmlFor="body-ne">Message (Nepali)</Label>
-          <textarea
-            id="body-ne"
-            value={bodyNe}
-            onChange={(e) => setBodyNe(e.target.value)}
-            className="h-20 w-full rounded border p-2 text-sm"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="body-en">Message (English)</Label>
-          <textarea
-            id="body-en"
-            value={bodyEn}
-            onChange={(e) => setBodyEn(e.target.value)}
-            className="h-20 w-full rounded border p-2 text-sm"
-            required
-          />
-        </div>
-
-        <Button type="submit">Preview</Button>
-      </form>
+            <Button type="submit" size="sm">
+              Preview
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {estimate && (
-        <div className="space-y-2 rounded border p-3">
-          <p className="text-sm font-medium">
-            {estimate.recipient_count} recipient{estimate.recipient_count === 1 ? "" : "s"} ·{" "}
-            {formatNpr(estimate.cost_npr, { symbol: true })}
-          </p>
-          <Button onClick={confirm} disabled={sending}>
-            {sending ? "..." : "Send broadcast"}
-          </Button>
-        </div>
+        <Card>
+          <CardContent className="space-y-2">
+            <p className="font-dashboard-mono text-sm font-medium">
+              {estimate.recipient_count} recipient{estimate.recipient_count === 1 ? "" : "s"}{" "}
+              &middot; {formatNpr(estimate.cost_npr, { symbol: true })}
+            </p>
+            <Button onClick={confirm} disabled={sending} size="sm">
+              {sending ? "..." : "Send broadcast"}
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

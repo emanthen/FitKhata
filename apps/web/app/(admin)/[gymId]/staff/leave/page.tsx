@@ -12,10 +12,19 @@ import {
   type LeaveRequest,
   type StaffProfile,
 } from "@fitkhata/api-client";
+import { CalendarOff, IdCard, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StaffTabs } from "@/components/staff/staff-tabs";
 
 function toList<T>(data: T[] | { results: T[] } | undefined): T[] {
@@ -91,85 +100,123 @@ export default function LeavePage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">Staff</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <IdCard size={18} strokeWidth={2} className="text-primary" />
+        Staff
+      </h1>
       <StaffTabs />
 
-      <form onSubmit={submit} className="flex flex-wrap items-end gap-3 rounded border p-3">
-        <div className="space-y-1">
-          <Label htmlFor="leave-staff">Staff</Label>
-          <select
-            id="leave-staff"
-            value={staffId}
-            onChange={(e) => setStaffId(e.target.value)}
-            className="h-9 w-40 rounded border bg-background px-2 text-sm"
-            required
-          >
-            <option value="" disabled>
-              Choose...
-            </option>
-            {staffList.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.full_name || s.badge_code}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="leave-from">From</Label>
-          <Input id="leave-from" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} required />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="leave-to">To</Label>
-          <Input id="leave-to" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} required />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="leave-kind">Kind</Label>
-          <select
-            id="leave-kind"
-            value={kind}
-            onChange={(e) => setKind(e.target.value as LeaveKind)}
-            className="h-9 rounded border bg-background px-2 text-sm"
-          >
-            {KINDS.map((k) => (
-              <option key={k.value} value={k.value}>
-                {k.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="leave-reason">Reason</Label>
-          <Input id="leave-reason" value={reason} onChange={(e) => setReason(e.target.value)} className="w-40" />
-        </div>
-        <Button type="submit">Submit</Button>
-      </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <Card>
+        <CardContent>
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="leave-staff">Staff</Label>
+              <Select value={staffId} onValueChange={setStaffId}>
+                <SelectTrigger id="leave-staff" className="h-8 w-40 text-sm">
+                  <SelectValue placeholder="Choose..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffList.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.full_name || s.badge_code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="leave-from">From</Label>
+              <Input
+                id="leave-from"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="h-8"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="leave-to">To</Label>
+              <Input
+                id="leave-to"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="h-8"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="leave-kind">Kind</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as LeaveKind)}>
+                <SelectTrigger id="leave-kind" className="h-8 w-32 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {KINDS.map((k) => (
+                    <SelectItem key={k.value} value={k.value}>
+                      {k.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="leave-reason">Reason</Label>
+              <Input
+                id="leave-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="h-8 w-40"
+              />
+            </div>
+            <Button type="submit" size="sm">
+              Submit
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
-      <div className="space-y-2">
-        <h2 className="text-lg font-medium">Pending approval</h2>
-        <ul className="space-y-2">
-          {pending.map((leave) => (
-            <li key={leave.id} className="flex items-center justify-between rounded border p-3 text-sm">
-              <div>
-                <p className="font-medium">{staffLabel(leave.staff)}</p>
-                <p className="opacity-70">
-                  {leave.kind} &middot; {leave.from_date} to {leave.to_date}
-                  {leave.reason && <> &middot; {leave.reason}</>}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => reject(leave.id)}>
-                  Reject
-                </Button>
-                <Button size="sm" onClick={() => approve(leave.id)}>
-                  Approve
-                </Button>
-              </div>
-            </li>
-          ))}
-          {pending.length === 0 && <li className="text-sm opacity-60">Nothing pending.</li>}
-        </ul>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CalendarOff size={15} strokeWidth={2} />
+            Pending approval
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y">
+            {pending.map((leave) => (
+              <li key={leave.id} className="flex items-center justify-between py-2.5 text-sm">
+                <div>
+                  <p className="font-medium">{staffLabel(leave.staff)}</p>
+                  <p className="text-muted-foreground">
+                    {leave.kind} &middot; {leave.from_date} to {leave.to_date}
+                    {leave.reason && <> &middot; {leave.reason}</>}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => reject(leave.id)}>
+                    Reject
+                  </Button>
+                  <Button size="sm" onClick={() => approve(leave.id)}>
+                    Approve
+                  </Button>
+                </div>
+              </li>
+            ))}
+            {pending.length === 0 && (
+              <li className="py-2.5 text-sm text-muted-foreground">Nothing pending.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -9,8 +9,10 @@ import {
   listClassBookings,
   listClassSchedules,
 } from "@fitkhata/api-client";
+import { CalendarDays, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -54,89 +56,120 @@ export default function ClassesPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">Classes</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <CalendarDays size={18} strokeWidth={2} className="text-primary" />
+        Classes
+      </h1>
 
-      <form onSubmit={createClass} className="flex flex-wrap items-end gap-3 rounded border p-3">
-        <div className="space-y-1">
-          <Label htmlFor="class-name">Name</Label>
-          <Input id="class-name" value={name} onChange={(e) => setName(e.target.value)} className="w-40" required />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="class-starts">Starts at</Label>
-          <Input
-            id="class-starts"
-            type="datetime-local"
-            value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="class-capacity">Capacity</Label>
-          <Input
-            id="class-capacity"
-            type="number"
-            value={capacity}
-            onChange={(e) => setCapacity(e.target.value)}
-            className="w-20"
-          />
-        </div>
-        <Button type="submit">Create class</Button>
-      </form>
+      <Card>
+        <CardContent>
+          <form onSubmit={createClass} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="class-name">Name</Label>
+              <Input
+                id="class-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-8 w-40"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="class-starts">Starts at</Label>
+              <Input
+                id="class-starts"
+                type="datetime-local"
+                value={startsAt}
+                onChange={(e) => setStartsAt(e.target.value)}
+                className="h-8"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="class-capacity">Capacity</Label>
+              <Input
+                id="class-capacity"
+                type="number"
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
+                className="h-8 w-20"
+              />
+            </div>
+            <Button type="submit" size="sm">
+              Create class
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <ul className="space-y-2">
           {classList.map((cls) => (
             <li
               key={cls.id}
-              className={`cursor-pointer rounded border px-3 py-2 text-sm ${selectedClass === cls.id ? "border-primary" : ""}`}
+              className={`cursor-pointer rounded-xl border p-3 text-sm transition-colors hover:bg-muted/50 ${
+                selectedClass === cls.id ? "border-primary bg-primary/5" : ""
+              }`}
               onClick={() => setSelectedClass(cls.id)}
             >
               <p className="font-medium">{cls.name}</p>
-              <p className="opacity-60">
+              <p className="font-dashboard-mono text-muted-foreground">
                 {new Date(cls.starts_at).toLocaleString()} &middot; {cls.booked_count}/{cls.capacity}
               </p>
             </li>
           ))}
-          {classList.length === 0 && <li className="text-sm opacity-60">No classes scheduled.</li>}
+          {classList.length === 0 && (
+            <li className="text-sm text-muted-foreground">No classes scheduled.</li>
+          )}
         </ul>
 
         {selectedClass && (
-          <div className="space-y-3 rounded border p-3">
-            <h2 className="text-sm font-medium">Bookings</h2>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Member ID"
-                value={memberIdToBook}
-                onChange={(e) => setMemberIdToBook(e.target.value)}
-                className="h-8"
-              />
-              <Button size="sm" onClick={book}>
-                Book
-              </Button>
-            </div>
-            <ul className="space-y-1 text-sm">
-              {bookingList.map((booking) => (
-                <li key={booking.id} className="flex items-center justify-between rounded border px-2 py-1">
-                  <span>
-                    {booking.member_name} &middot; <span className="capitalize">{booking.status}</span>
-                  </span>
-                  {booking.status !== "cancelled" && (
-                    <button
-                      onClick={async () => {
-                        await cancelBooking(booking.id);
-                        refresh();
-                      }}
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </li>
-              ))}
-              {bookingList.length === 0 && <li className="text-sm opacity-60">No bookings yet.</li>}
-            </ul>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users size={14} strokeWidth={2} />
+                Bookings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Member ID"
+                  value={memberIdToBook}
+                  onChange={(e) => setMemberIdToBook(e.target.value)}
+                  className="h-8"
+                />
+                <Button size="sm" onClick={book}>
+                  Book
+                </Button>
+              </div>
+              <ul className="divide-y text-sm">
+                {bookingList.map((booking) => (
+                  <li key={booking.id} className="flex items-center justify-between py-1.5">
+                    <span>
+                      {booking.member_name} &middot; <span className="capitalize">{booking.status}</span>
+                    </span>
+                    {booking.status !== "cancelled" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-1.5 text-xs text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          await cancelBooking(booking.id);
+                          refresh();
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </li>
+                ))}
+                {bookingList.length === 0 && (
+                  <li className="py-1.5 text-muted-foreground">No bookings yet.</li>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

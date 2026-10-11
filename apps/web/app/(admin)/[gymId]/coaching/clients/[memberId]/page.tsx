@@ -9,17 +9,21 @@ import {
   listWorkoutLogs,
   type BodyMeasurement,
 } from "@fitkhata/api-client";
+import { Dumbbell, LineChart, TriangleAlert } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function ProgressBar({ label, pct }: { label: string; pct: number }) {
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-sm">
         <span>{label}</span>
-        <span className="opacity-60">{pct.toFixed(0)}%</span>
+        <span className="font-dashboard-mono text-muted-foreground">{pct.toFixed(0)}%</span>
       </div>
-      <div className="h-2 w-full rounded bg-muted">
+      <div className="h-2 w-full rounded-full bg-muted">
         <div
-          className="h-2 rounded bg-primary transition-[width]"
+          className="h-2 rounded-full bg-primary transition-[width]"
           style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
         />
       </div>
@@ -30,7 +34,9 @@ function ProgressBar({ label, pct }: { label: string; pct: number }) {
 function WeightTrendChart({ measurements }: { measurements: BodyMeasurement[] }) {
   const points = [...measurements].reverse(); // oldest -> newest, left to right
   if (points.length < 2) {
-    return <p className="text-sm opacity-60">Not enough measurements yet for a trend chart.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">Not enough measurements yet for a trend chart.</p>
+    );
   }
   const weights = points.map((m) => Number(m.weight_kg));
   const min = Math.min(...weights);
@@ -78,50 +84,84 @@ export default function ClientCoachingProfilePage() {
   });
   const logList = Array.isArray(logs.data) ? logs.data : logs.data?.results ?? [];
 
-  if (profiles.isLoading) return <p className="text-sm opacity-60">Loading...</p>;
-  if (!profile) return <p className="text-sm text-red-600">This member has no coaching profile yet.</p>;
+  if (profiles.isLoading) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
+    );
+  }
+  if (!profile) {
+    return (
+      <p className="flex items-center gap-1.5 text-sm text-destructive">
+        <TriangleAlert size={14} strokeWidth={2} />
+        This member has no coaching profile yet.
+      </p>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">{profile.member_name}</h1>
-        <p className="text-sm opacity-60">
+        <h1 className="text-xl font-semibold tracking-tight">{profile.member_name}</h1>
+        <p className="font-dashboard-mono mt-0.5 text-sm text-muted-foreground">
           Goal: {profile.primary_goal.replace("_", " ")} &middot; {profile.starting_weight_kg}kg &rarr;{" "}
           {profile.target_weight_kg}kg
         </p>
       </div>
 
       {progress.data && (
-        <section className="space-y-3 rounded border p-4">
-          <ProgressBar label="Goal progress" pct={progress.data.goal_progress_pct} />
-          <ProgressBar label="Attendance (last 4 weeks)" pct={progress.data.attendance_pct} />
-        </section>
+        <Card>
+          <CardContent className="space-y-3">
+            <ProgressBar label="Goal progress" pct={progress.data.goal_progress_pct} />
+            <ProgressBar label="Attendance (last 4 weeks)" pct={progress.data.attendance_pct} />
+          </CardContent>
+        </Card>
       )}
 
-      <section className="space-y-2 rounded border p-4">
-        <h2 className="text-lg font-medium">Weight trend</h2>
-        <WeightTrendChart measurements={measurementList} />
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+            <LineChart size={15} strokeWidth={2} />
+            Weight trend
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <WeightTrendChart measurements={measurementList} />
+        </CardContent>
+      </Card>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Recent workout logs</h2>
-        <ul className="space-y-1 text-sm">
-          {logList.slice(0, 10).map((log) => (
-            <li key={log.id} className="flex justify-between rounded border px-3 py-2">
-              <span>
-                {log.logged_on} &middot; {log.exercise_name_en}
-              </span>
-              <span className="opacity-60">{log.sets.length} set(s)</span>
-            </li>
-          ))}
-          {logList.length === 0 && <li className="text-sm opacity-60">No workout logs yet.</li>}
-        </ul>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Dumbbell size={15} strokeWidth={2} />
+            Recent workout logs
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y text-sm">
+            {logList.slice(0, 10).map((log) => (
+              <li key={log.id} className="flex items-center justify-between py-2">
+                <span>
+                  {log.logged_on} &middot; {log.exercise_name_en}
+                </span>
+                <span className="font-dashboard-mono text-muted-foreground">
+                  {log.sets.length} set(s)
+                </span>
+              </li>
+            ))}
+            {logList.length === 0 && (
+              <li className="py-2 text-muted-foreground">No workout logs yet.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
 
       {profile.coach_notes && (
         <section className="space-y-1">
-          <h2 className="text-lg font-medium">Coach notes</h2>
-          <p className="text-sm opacity-80">{profile.coach_notes}</p>
+          <h2 className="text-sm font-medium text-muted-foreground">Coach notes</h2>
+          <p className="text-sm text-foreground/80">{profile.coach_notes}</p>
         </section>
       )}
     </div>

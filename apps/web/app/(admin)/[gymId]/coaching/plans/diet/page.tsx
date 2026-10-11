@@ -8,10 +8,15 @@ import {
   listFoodItems,
   type DietPlanMealItem,
 } from "@fitkhata/api-client";
+import { Apple, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const selectClass =
+  "h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 function computeTotals(
   items: DietPlanMealItem[],
@@ -76,64 +81,90 @@ export default function DietPlanBuilderPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">Diet plan builder</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <Apple size={18} strokeWidth={2} className="text-primary" />
+        Diet plan builder
+      </h1>
 
-      <div className="space-y-3 rounded border p-4">
-        <div className="space-y-1">
-          <Label htmlFor="diet-name">Plan name</Label>
-          <Input id="diet-name" value={name} onChange={(e) => setName(e.target.value)} className="w-64" />
-        </div>
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="diet-name">Plan name</Label>
+            <Input
+              id="diet-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-8 w-64"
+            />
+          </div>
 
-        <div className="space-y-2">
-          {items.map((item, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm">
-              <select
-                value={item.food_item_id}
-                onChange={(e) => updateItem(i, { food_item_id: e.target.value })}
-                className="h-8 flex-1 rounded border px-2"
-              >
-                {foodItemList.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name_en}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                value={item.grams}
-                onChange={(e) => updateItem(i, { grams: Number(e.target.value) })}
-                className="h-8 w-20 rounded border px-2"
-              />
-              <span className="opacity-60">g</span>
-              <button onClick={() => removeItem(i)} className="text-xs text-red-600 hover:underline">
-                Remove
-              </button>
-            </div>
-          ))}
-          <Button type="button" size="sm" variant="outline" onClick={addItem}>
-            + Food item
+          <div className="space-y-2">
+            {items.map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                <select
+                  value={item.food_item_id}
+                  onChange={(e) => updateItem(i, { food_item_id: e.target.value })}
+                  className={`${selectClass} flex-1`}
+                >
+                  {foodItemList.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name_en}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  type="number"
+                  value={item.grams}
+                  onChange={(e) => updateItem(i, { grams: Number(e.target.value) })}
+                  className="h-8 w-20"
+                />
+                <span className="text-muted-foreground">g</span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => removeItem(i)}
+                  aria-label="Remove item"
+                >
+                  <X size={14} strokeWidth={2} />
+                </Button>
+              </div>
+            ))}
+            <Button type="button" size="sm" variant="outline" onClick={addItem}>
+              + Food item
+            </Button>
+          </div>
+
+          <p className="font-dashboard-mono text-sm font-medium">
+            Live totals: {totals.kcal} kcal &middot; {totals.protein}g protein
+          </p>
+
+          <Button onClick={save} disabled={saving || !name || items.length === 0}>
+            {saving ? "..." : "Save plan"}
           </Button>
-        </div>
+        </CardContent>
+      </Card>
 
-        <p className="text-sm font-medium">
-          Live totals: {totals.kcal} kcal &middot; {totals.protein}g protein
-        </p>
-
-        <Button onClick={save} disabled={saving || !name || items.length === 0}>
-          {saving ? "..." : "Save plan"}
-        </Button>
-      </div>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Existing plans</h2>
-        <ul className="space-y-1 text-sm">
-          {planList.map((plan) => (
-            <li key={plan.id} className="rounded border px-3 py-2">
-              {plan.name} &middot; {plan.kcal_target} kcal &middot; {plan.protein_g}g protein
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-muted-foreground">Existing plans</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y text-sm">
+            {planList.map((plan) => (
+              <li key={plan.id} className="py-2">
+                {plan.name} &middot;{" "}
+                <span className="font-dashboard-mono">
+                  {plan.kcal_target} kcal &middot; {plan.protein_g}g protein
+                </span>
+              </li>
+            ))}
+            {planList.length === 0 && (
+              <li className="py-2 text-muted-foreground">No plans yet.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

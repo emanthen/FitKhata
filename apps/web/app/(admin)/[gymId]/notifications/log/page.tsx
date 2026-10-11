@@ -9,6 +9,7 @@ import {
   type NotificationChannel,
   type Page,
 } from "@fitkhata/api-client";
+import { BellRing } from "lucide-react";
 
 import {
   Select,
@@ -58,17 +59,20 @@ export default function NotificationLogPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Delivery log</h1>
+        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <BellRing size={18} strokeWidth={2} className="text-primary" />
+          Delivery log
+        </h1>
         {monthlyCost.data && (
-          <p className="text-sm opacity-70">
+          <p className="font-dashboard-mono text-sm text-muted-foreground">
             This month: {formatNpr(monthlyCost.data.cost_npr, { symbol: true })}
           </p>
         )}
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="h-8 w-40 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -80,7 +84,7 @@ export default function NotificationLogPage() {
           </SelectContent>
         </Select>
         <Select value={channel} onValueChange={(v) => setChannel(v as typeof channel)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="h-8 w-40 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -115,15 +119,17 @@ export default function NotificationLogPage() {
                   {n.status}
                 </Badge>
               </TableCell>
-              <TableCell>{formatNpr(n.cost_npr, { symbol: true })}</TableCell>
-              <TableCell className="text-xs opacity-60">
+              <TableCell className="font-dashboard-mono">
+                {formatNpr(n.cost_npr, { symbol: true })}
+              </TableCell>
+              <TableCell className="font-dashboard-mono text-xs text-muted-foreground">
                 {new Date(n.created_at).toLocaleString()}
               </TableCell>
             </TableRow>
           ))}
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm opacity-60">
+              <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                 No notifications match these filters.
               </TableCell>
             </TableRow>

@@ -5,11 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPayrollRun, listPayrollRuns, type PayrollRun } from "@fitkhata/api-client";
+import { IdCard, TriangleAlert, Wallet } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StaffTabs } from "@/components/staff/staff-tabs";
+import { formatNpr } from "@/lib/money";
 
 function toList(data: PayrollRun[] | { results: PayrollRun[] } | undefined): PayrollRun[] {
   if (!data) return [];
@@ -43,56 +47,73 @@ export default function PayrollPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">Staff</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <IdCard size={18} strokeWidth={2} className="text-primary" />
+        Staff
+      </h1>
       <StaffTabs />
 
-      <form onSubmit={submit} className="flex flex-wrap items-end gap-3 rounded border p-3">
-        <div className="space-y-1">
-          <Label htmlFor="period-bs">Period (BS, YYYY-MM)</Label>
-          <Input
-            id="period-bs"
-            placeholder="2083-06"
-            value={periodBs}
-            onChange={(e) => setPeriodBs(e.target.value)}
-            className="w-32"
-            required
-          />
-        </div>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Computing..." : "Create / recompute run"}
-        </Button>
-      </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <p className="text-xs opacity-60">
-        Creating a run for a period that already has a draft recomputes it in place — safe to
-        re-run after fixing attendance or an advance, as long as it isn&apos;t finalized yet.
-      </p>
+      <Card>
+        <CardContent className="space-y-3">
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="period-bs">Period (BS, YYYY-MM)</Label>
+              <Input
+                id="period-bs"
+                placeholder="2083-06"
+                value={periodBs}
+                onChange={(e) => setPeriodBs(e.target.value)}
+                className="h-8 w-32"
+                required
+              />
+            </div>
+            <Button type="submit" size="sm" disabled={submitting}>
+              {submitting ? "Computing..." : "Create / recompute run"}
+            </Button>
+          </form>
+          <p className="text-xs text-muted-foreground">
+            Creating a run for a period that already has a draft recomputes it in place - safe to
+            re-run after fixing attendance or an advance, as long as it isn&apos;t finalized yet.
+          </p>
+        </CardContent>
+      </Card>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
-      <ul className="space-y-2">
-        {runs.map((run) => (
-          <li key={run.id}>
-            <Link
-              href={`payroll/${run.id}`}
-              className="flex items-center justify-between rounded border px-3 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
-            >
-              <span>{run.period_bs} BS</span>
-              <span className="flex items-center gap-3">
-                <span className="opacity-70">NPR {run.totals_npr}</span>
-                <span
-                  className={`rounded px-2 py-0.5 text-xs ${
-                    run.status === "finalized"
-                      ? "bg-green-100 text-green-800 dark:bg-green-950"
-                      : "bg-amber-100 text-amber-800 dark:bg-amber-950"
-                  }`}
+      <Card>
+        <CardContent>
+          <ul className="divide-y">
+            {runs.map((run) => (
+              <li key={run.id}>
+                <Link
+                  href={`payroll/${run.id}`}
+                  className="-mx-(--card-spacing) flex items-center justify-between px-(--card-spacing) py-2.5 text-sm transition-colors hover:bg-muted"
                 >
-                  {run.status}
-                </span>
-              </span>
-            </Link>
-          </li>
-        ))}
-        {runs.length === 0 && <li className="text-sm opacity-60">No payroll runs yet.</li>}
-      </ul>
+                  <span className="flex items-center gap-2">
+                    <Wallet size={14} strokeWidth={2} className="text-muted-foreground" />
+                    {run.period_bs} BS
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <span className="font-dashboard-mono text-muted-foreground">
+                      {formatNpr(run.totals_npr, { symbol: true })}
+                    </span>
+                    <Badge variant={run.status === "finalized" ? "default" : "secondary"}>
+                      {run.status}
+                    </Badge>
+                  </span>
+                </Link>
+              </li>
+            ))}
+            {runs.length === 0 && (
+              <li className="py-2.5 text-sm text-muted-foreground">No payroll runs yet.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -10,10 +10,19 @@ import {
   type WorkoutPlanExercise,
   type WorkoutSplit,
 } from "@fitkhata/api-client";
+import { Dumbbell } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 const SPLITS: { value: WorkoutSplit; label: string }[] = [
@@ -22,6 +31,9 @@ const SPLITS: { value: WorkoutSplit; label: string }[] = [
   { value: "full_body", label: "Full body" },
   { value: "custom", label: "Custom" },
 ];
+
+const miniSelectClass =
+  "h-7 rounded-md border border-input bg-transparent px-1.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export default function WorkoutPlanBuilderPage() {
   const queryClient = useQueryClient();
@@ -70,89 +82,106 @@ export default function WorkoutPlanBuilderPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">Workout plan builder</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <Dumbbell size={18} strokeWidth={2} className="text-primary" />
+        Workout plan builder
+      </h1>
 
-      <div className="space-y-3 rounded border p-4">
-        <div className="flex flex-wrap gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="plan-name">Plan name</Label>
-            <Input id="plan-name" value={name} onChange={(e) => setName(e.target.value)} className="w-56" />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="plan-split">Split</Label>
-            <select
-              id="plan-split"
-              value={split}
-              onChange={(e) => setSplit(e.target.value as WorkoutSplit)}
-              className="h-9 rounded border px-2 text-sm"
-            >
-              {SPLITS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {DAYS.map((day) => (
-            <div key={day} className="space-y-2 rounded border p-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium uppercase">{day}</span>
-                <Button type="button" size="sm" variant="outline" onClick={() => addExerciseToDay(day)}>
-                  + Exercise
-                </Button>
-              </div>
-              {(days[day] ?? []).map((ex, i) => (
-                <div key={i} className="flex flex-wrap items-center gap-1 text-xs">
-                  <select
-                    value={ex.exercise_id}
-                    onChange={(e) => updateDayExercise(day, i, { exercise_id: e.target.value })}
-                    className="h-7 rounded border px-1"
-                  >
-                    {exerciseList.map((ex2) => (
-                      <option key={ex2.id} value={ex2.id}>
-                        {ex2.name_en}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    value={ex.sets}
-                    onChange={(e) => updateDayExercise(day, i, { sets: Number(e.target.value) })}
-                    className="h-7 w-12 rounded border px-1"
-                    title="sets"
-                  />
-                  <span>x</span>
-                  <input
-                    type="number"
-                    value={ex.reps}
-                    onChange={(e) => updateDayExercise(day, i, { reps: Number(e.target.value) })}
-                    className="h-7 w-12 rounded border px-1"
-                    title="reps"
-                  />
-                </div>
-              ))}
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-name">Plan name</Label>
+              <Input
+                id="plan-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-8 w-56"
+              />
             </div>
-          ))}
-        </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="plan-split">Split</Label>
+              <Select value={split} onValueChange={(v) => setSplit(v as WorkoutSplit)}>
+                <SelectTrigger id="plan-split" className="h-8 w-40 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPLITS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-        <Button onClick={save} disabled={saving || !name}>
-          {saving ? "..." : "Save plan"}
-        </Button>
-      </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {DAYS.map((day) => (
+              <div key={day} className="space-y-2 rounded-lg border p-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium uppercase">{day}</span>
+                  <Button type="button" size="sm" variant="outline" onClick={() => addExerciseToDay(day)}>
+                    + Exercise
+                  </Button>
+                </div>
+                {(days[day] ?? []).map((ex, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-1 text-xs">
+                    <select
+                      value={ex.exercise_id}
+                      onChange={(e) => updateDayExercise(day, i, { exercise_id: e.target.value })}
+                      className={miniSelectClass}
+                    >
+                      {exerciseList.map((ex2) => (
+                        <option key={ex2.id} value={ex2.id}>
+                          {ex2.name_en}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={ex.sets}
+                      onChange={(e) => updateDayExercise(day, i, { sets: Number(e.target.value) })}
+                      className={`${miniSelectClass} w-12`}
+                      title="sets"
+                    />
+                    <span className="text-muted-foreground">&times;</span>
+                    <input
+                      type="number"
+                      value={ex.reps}
+                      onChange={(e) => updateDayExercise(day, i, { reps: Number(e.target.value) })}
+                      className={`${miniSelectClass} w-12`}
+                      title="reps"
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Existing plans</h2>
-        <ul className="space-y-1 text-sm">
-          {planList.map((plan) => (
-            <li key={plan.id} className="rounded border px-3 py-2">
-              {plan.name} &middot; {plan.split.replace("_", " ")} &middot; {plan.days.length} day(s)
-            </li>
-          ))}
-        </ul>
-      </section>
+          <Button onClick={save} disabled={saving || !name}>
+            {saving ? "..." : "Save plan"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-muted-foreground">Existing plans</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y text-sm">
+            {planList.map((plan) => (
+              <li key={plan.id} className="py-2">
+                {plan.name} &middot; {plan.split.replace("_", " ")} &middot; {plan.days.length} day(s)
+              </li>
+            ))}
+            {planList.length === 0 && (
+              <li className="py-2 text-muted-foreground">No plans yet.</li>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

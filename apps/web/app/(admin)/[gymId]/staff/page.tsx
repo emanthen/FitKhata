@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { listStaffRoles, type StaffRole } from "@fitkhata/api-client";
+import { IdCard, TriangleAlert } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StaffTabs } from "@/components/staff/staff-tabs";
 
 export default function StaffPage() {
@@ -20,31 +24,48 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Staff</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <IdCard size={18} strokeWidth={2} className="text-primary" />
+        Staff
+      </h1>
       <StaffTabs />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {roles && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left opacity-60">
-              <th className="py-1">User</th>
-              <th className="py-1">Role</th>
-              <th className="py-1">Scope</th>
-              <th className="py-1">Active</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roles.map((role) => (
-              <tr key={role.id} className="border-b">
-                <td className="py-1 font-mono text-xs">{role.user}</td>
-                <td className="py-1">{role.role}</td>
-                <td className="py-1">{role.gym ? "This branch" : "All branches"}</td>
-                <td className="py-1">{role.is_active ? "Yes" : "No"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
       )}
+      <Card>
+        <CardContent>
+          {!roles && !error && <Skeleton className="h-40 w-full" />}
+          {roles && (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="py-1.5">User</th>
+                  <th className="py-1.5">Role</th>
+                  <th className="py-1.5">Scope</th>
+                  <th className="py-1.5">Active</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roles.map((role) => (
+                  <tr key={role.id} className="border-b">
+                    <td className="font-dashboard-mono py-1.5 text-xs">{role.user}</td>
+                    <td className="py-1.5 capitalize">{role.role}</td>
+                    <td className="py-1.5">{role.gym ? "This branch" : "All branches"}</td>
+                    <td className="py-1.5">
+                      <Badge variant={role.is_active ? "default" : "secondary"}>
+                        {role.is_active ? "Yes" : "No"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
