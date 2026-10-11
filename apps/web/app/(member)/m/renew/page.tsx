@@ -14,11 +14,23 @@ import {
   type RenewalPlan,
   type RenewalProvider,
 } from "@fitkhata/api-client";
+import { CircleCheck, Loader2, TriangleAlert, Wallet } from "lucide-react";
 
 import { getCachedPass } from "@/lib/member/pass";
+import { formatNpr } from "@/lib/money";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const PENDING_RENEWAL_KEY = "fitkhata.pending-renewal";
 const FONEPAY_POLL_MS = 3000;
+
+const PROVIDERS: { value: RenewalProvider; label: string }[] = [
+  { value: "esewa", label: "eSewa" },
+  { value: "khalti", label: "Khalti" },
+  { value: "fonepay", label: "Fonepay" },
+];
 
 export default function RenewPage() {
   const t = useTranslations("member");
@@ -131,18 +143,24 @@ export default function RenewPage() {
       <div className="space-y-4 text-center">
         {fonepayDone ? (
           <>
-            <p className="text-green-700">{t("renewReturnSuccess")}</p>
-            <Link href="/m" className="inline-block text-sm underline opacity-70">
+            <p className="flex items-center justify-center gap-1.5 text-primary">
+              <CircleCheck size={16} strokeWidth={2} />
+              {t("renewReturnSuccess")}
+            </p>
+            <Link href="/m" className="inline-block text-sm text-muted-foreground underline">
               {t("renewReturnBackToPass")}
             </Link>
           </>
         ) : (
           <>
             <p className="font-medium">{t("renewFonepayScan")}</p>
-            <div className="flex justify-center">
+            <div className="flex justify-center rounded-xl border bg-card p-4">
               <QRCodeSVG value={fonepayQr.message} size={220} />
             </div>
-            <p className="text-sm opacity-70">{t("renewFonepayWaiting")}</p>
+            <p className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+              <Loader2 size={13} strokeWidth={2} className="animate-spin" />
+              {t("renewFonepayWaiting")}
+            </p>
           </>
         )}
       </div>
@@ -152,7 +170,10 @@ export default function RenewPage() {
   if (redirectForm) {
     return (
       <div className="text-center">
-        <p className="opacity-70">{t("renewLoading")}</p>
+        <p className="flex items-center justify-center gap-1.5 text-muted-foreground">
+          <Loader2 size={13} strokeWidth={2} className="animate-spin" />
+          {t("renewLoading")}
+        </p>
         <form
           id="gateway-redirect-form"
           action={redirectForm.url}
@@ -168,34 +189,54 @@ export default function RenewPage() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-4">
-      <h1 className="text-2xl font-semibold">{t("renewTitle")}</h1>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+    <div className="w-full max-w-sm space-y-5">
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <Wallet size={18} strokeWidth={2} className="text-primary" />
+        {t("renewTitle")}
+      </h1>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
-      {plans === null && <p className="opacity-70">{t("renewLoading")}</p>}
-      {plans !== null && plans.length === 0 && <p className="opacity-70">{t("renewNoPlans")}</p>}
+      {plans === null && (
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Loader2 size={13} strokeWidth={2} className="animate-spin" />
+          {t("renewLoading")}
+        </p>
+      )}
+      {plans !== null && plans.length === 0 && (
+        <p className="text-sm text-muted-foreground">{t("renewNoPlans")}</p>
+      )}
 
       {plans !== null && plans.length > 0 && (
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-5">
           <div>
             <p className="mb-2 text-sm font-medium">{t("renewChoosePlan")}</p>
             <div className="space-y-2">
               {plans.map((plan) => (
                 <label
                   key={plan.id}
-                  className="flex items-center justify-between rounded border px-3 py-2"
+                  className={`flex items-center justify-between rounded-xl border px-3.5 py-3 transition-colors ${
+                    planId === plan.id ? "border-primary bg-primary/5" : ""
+                  }`}
                 >
-                  <span>
-                    {plan.name} <span className="opacity-60">({plan.duration_days}d)</span>
+                  <span className="text-sm">
+                    {plan.name} <span className="text-muted-foreground">({plan.duration_days}d)</span>
                   </span>
-                  <span className="flex items-center gap-2">
-                    <span>NPR {plan.price_npr}</span>
+                  <span className="flex items-center gap-2.5">
+                    <span className="font-dashboard-mono text-sm">
+                      {formatNpr(plan.price_npr, { symbol: true })}
+                    </span>
                     <input
                       type="radio"
                       name="plan"
                       value={plan.id}
                       checked={planId === plan.id}
                       onChange={() => setPlanId(plan.id)}
+                      className="size-4 accent-primary"
                     />
                   </span>
                 </label>
@@ -210,15 +251,16 @@ export default function RenewPage() {
                 {addOns.map((addon) => (
                   <label
                     key={addon.id}
-                    className="flex items-center justify-between rounded border px-3 py-2"
+                    className="flex items-center justify-between rounded-xl border px-3.5 py-3"
                   >
-                    <span>{addon.name}</span>
-                    <span className="flex items-center gap-2">
-                      <span>NPR {addon.price_npr}</span>
-                      <input
-                        type="checkbox"
+                    <span className="text-sm">{addon.name}</span>
+                    <span className="flex items-center gap-2.5">
+                      <span className="font-dashboard-mono text-sm">
+                        {formatNpr(addon.price_npr, { symbol: true })}
+                      </span>
+                      <Checkbox
                         checked={addonIds.includes(addon.id)}
-                        onChange={() => toggleAddon(addon.id)}
+                        onCheckedChange={() => toggleAddon(addon.id)}
                       />
                     </span>
                   </label>
@@ -227,52 +269,49 @@ export default function RenewPage() {
             </div>
           )}
 
-          <label className="block text-sm">
-            {t("renewPromoCode")}
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="promo">{t("renewPromoCode")}</Label>
+            <Input
+              id="promo"
               type="text"
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value)}
               placeholder={t("renewPromoPlaceholder")}
-              className="mt-1 w-full rounded border px-3 py-2 uppercase"
+              className="h-11 uppercase"
             />
-          </label>
+          </div>
 
           <div>
             <p className="mb-2 text-sm font-medium">{t("renewChooseProvider")}</p>
-            <div className="flex gap-3">
-              {(
-                [
-                  { value: "esewa", label: "eSewa" },
-                  { value: "khalti", label: "Khalti" },
-                  { value: "fonepay", label: "Fonepay" },
-                ] satisfies { value: RenewalProvider; label: string }[]
-              ).map((p) => (
-                <label key={p.value} className="flex items-center gap-1.5 rounded border px-3 py-2">
+            <div className="flex gap-2">
+              {PROVIDERS.map((p) => (
+                <label
+                  key={p.value}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
+                    provider === p.value ? "border-primary bg-primary/5" : ""
+                  }`}
+                >
                   <input
                     type="radio"
                     name="provider"
                     value={p.value}
                     checked={provider === p.value}
                     onChange={() => setProvider(p.value)}
+                    className="size-4 accent-primary"
                   />
-                  <span>{p.label}</span>
+                  {p.label}
                 </label>
               ))}
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-          >
+          <Button type="submit" disabled={submitting} size="lg" className="h-12 w-full text-base">
             {submitting ? "..." : t("renewPayButton")}
-          </button>
+          </Button>
         </form>
       )}
 
-      <Link href="/m" className="block text-center text-sm underline opacity-70">
+      <Link href="/m" className="block text-center text-sm text-muted-foreground underline">
         {t("renewBack")}
       </Link>
     </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { redeemMemberPass } from "@fitkhata/api-client";
+import { Loader2, TriangleAlert } from "lucide-react";
 
 import { setCachedPass } from "@/lib/member/pass";
 
@@ -33,6 +34,18 @@ export default function RedeemPassPage() {
       .catch(() => setError(true));
   }, [params.token, router]);
 
-  if (error) return <p className="text-sm text-red-600">{t("passError")}</p>;
-  return <p className="opacity-70">{t("passLoading")}</p>;
+  if (error) {
+    return (
+      <p className="flex items-center justify-center gap-1.5 text-sm text-destructive">
+        <TriangleAlert size={14} strokeWidth={2} />
+        {t("passError")}
+      </p>
+    );
+  }
+  return (
+    <p className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+      <Loader2 size={14} strokeWidth={2} className="animate-spin" />
+      {t("passLoading")}
+    </p>
+  );
 }

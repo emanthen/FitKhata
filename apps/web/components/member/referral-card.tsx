@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Gift, Share2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Mirrors members.services.REFERRAL_REWARD_DAYS — FR-8.8's reward is
 // granted server-side on the referred friend's first completed payment
@@ -38,13 +42,19 @@ export function ReferralCard({ code }: { code: string }) {
   }
 
   return (
-    <div className="w-full space-y-1 rounded border p-3 text-center text-sm">
-      <p className="font-medium">{t("referralTitle")}</p>
-      <p className="text-lg font-semibold tracking-wide">{code}</p>
-      <p className="opacity-70">{t("referralBody", { days: REFERRAL_REWARD_DAYS })}</p>
-      <button onClick={share} className="text-sm underline opacity-70">
-        {copied ? t("referralCopied") : canShare ? t("referralShare") : t("referralCopy")}
-      </button>
-    </div>
+    <Card className="w-full">
+      <CardContent className="flex flex-col items-center gap-1 text-center">
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          <Gift size={14} strokeWidth={2} className="text-accent" />
+          {t("referralTitle")}
+        </p>
+        <p className="font-dashboard-mono text-lg font-semibold tracking-wide">{code}</p>
+        <p className="text-sm text-muted-foreground">{t("referralBody", { days: REFERRAL_REWARD_DAYS })}</p>
+        <Button variant="ghost" size="sm" onClick={share} className="mt-1 text-primary hover:text-primary">
+          <Share2 size={13} strokeWidth={2} data-icon="inline-start" />
+          {copied ? t("referralCopied") : canShare ? t("referralShare") : t("referralCopy")}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

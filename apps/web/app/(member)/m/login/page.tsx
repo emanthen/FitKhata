@@ -4,8 +4,12 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { sendMemberLoginOtp, verifyMemberLoginOtp } from "@fitkhata/api-client";
+import { Phone, ShieldCheck, TriangleAlert } from "lucide-react";
 
 import { setCachedPass } from "@/lib/member/pass";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type Step = "phone" | "code";
 
@@ -67,38 +71,48 @@ export default function MemberLoginPage() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-4">
-      <h1 className="text-2xl font-semibold">{t("loginTitle")}</h1>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+    <div className="w-full max-w-sm space-y-5">
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        {step === "phone" ? (
+          <Phone size={18} strokeWidth={2} className="text-primary" />
+        ) : (
+          <ShieldCheck size={18} strokeWidth={2} className="text-primary" />
+        )}
+        {t("loginTitle")}
+      </h1>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
       {step === "phone" && (
-        <form onSubmit={sendCode} className="space-y-3">
-          <label className="block text-sm">
-            {t("loginPhone")}
-            <input
+        <form onSubmit={sendCode} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="login-phone">{t("loginPhone")}</Label>
+            <Input
+              id="login-phone"
               type="tel"
               required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="h-11"
             />
-          </label>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-          >
+          </div>
+          <Button type="submit" disabled={submitting} size="lg" className="h-12 w-full text-base">
             {submitting ? "..." : t("loginSendCode")}
-          </button>
+          </Button>
         </form>
       )}
 
       {step === "code" && (
-        <form onSubmit={verify} className="space-y-3">
-          <p className="text-sm opacity-70">{t("loginCodeSent")}</p>
-          <label className="block text-sm">
-            {t("loginCode")}
-            <input
+        <form onSubmit={verify} className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t("loginCodeSent")}</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="login-code">{t("loginCode")}</Label>
+            <Input
+              id="login-code"
               type="text"
               inputMode="numeric"
               required
@@ -106,26 +120,23 @@ export default function MemberLoginPage() {
               maxLength={6}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="font-dashboard-mono h-11 text-center text-lg tracking-[0.3em]"
             />
-          </label>
-          <label className="block text-sm">
-            {t("loginGymCode")}
-            <input
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="login-gym">{t("loginGymCode")}</Label>
+            <Input
+              id="login-gym"
               type="text"
               required
               value={gymCode}
               onChange={(e) => setGymCode(e.target.value)}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="h-11"
             />
-          </label>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded bg-black px-3 py-2 text-white disabled:opacity-50"
-          >
+          </div>
+          <Button type="submit" disabled={submitting} size="lg" className="h-12 w-full text-base">
             {submitting ? "..." : t("loginVerify")}
-          </button>
+          </Button>
         </form>
       )}
     </div>

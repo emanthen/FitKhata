@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { confirmRenewalCallback } from "@fitkhata/api-client";
+import { CircleCheck, Loader2, TriangleAlert } from "lucide-react";
 
 const PENDING_RENEWAL_KEY = "fitkhata.pending-renewal";
 const POLL_MS = 4000;
@@ -91,11 +92,20 @@ export default function RenewReturnPage() {
           ? t("renewReturnPending")
           : t("renewReturnError");
 
+  const Icon = outcome === "completed" ? CircleCheck : outcome === "error" ? TriangleAlert : Loader2;
+
   return (
     <div className="w-full max-w-sm space-y-4 text-center">
-      <p className={outcome === "error" ? "text-red-600" : undefined}>{message}</p>
+      <p
+        className={`flex items-center justify-center gap-1.5 text-sm ${
+          outcome === "error" ? "text-destructive" : outcome === "completed" ? "text-primary" : ""
+        }`}
+      >
+        <Icon size={15} strokeWidth={2} className={outcome === "processing" || outcome === "pending" ? "animate-spin" : ""} />
+        {message}
+      </p>
       {outcome !== "processing" && (
-        <Link href="/m" className="inline-block text-sm underline opacity-70">
+        <Link href="/m" className="inline-block text-sm text-muted-foreground underline">
           {t("renewReturnBackToPass")}
         </Link>
       )}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { listMemberAnnouncements } from "@fitkhata/api-client";
+import { Megaphone, X } from "lucide-react";
 
 import { getCachedPass } from "@/lib/member/pass";
 
@@ -44,17 +45,21 @@ export function AnnouncementBanner() {
   return (
     <div className="mb-4 space-y-2">
       {announcements.map((a) => (
-        <div key={a.id} className="rounded border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950">
+        <div key={a.id} className="rounded-xl border border-accent/30 bg-accent/10 p-3 text-sm">
           <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-medium">{a.title}</p>
-              <p className="opacity-80">{a.body}</p>
+            <div className="flex gap-2">
+              <Megaphone size={15} strokeWidth={2} className="mt-0.5 shrink-0 text-accent" />
+              <div>
+                <p className="font-medium">{a.title}</p>
+                <p className="text-foreground/80">{a.body}</p>
+              </div>
             </div>
             <button
               onClick={() => dismiss(a.id)}
-              className="shrink-0 text-xs underline opacity-60"
+              aria-label={t("announcementsDismiss")}
+              className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
             >
-              {t("announcementsDismiss")}
+              <X size={14} strokeWidth={2} />
             </button>
           </div>
         </div>

@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { fetchMemberInvoicePdf, listMemberInvoices, type Invoice } from "@fitkhata/api-client";
+import { Download, Receipt } from "lucide-react";
 
 import { getCachedPass } from "@/lib/member/pass";
+import { formatNpr } from "@/lib/money";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MemberInvoicesPage() {
   const t = useTranslations("member");
@@ -35,28 +40,42 @@ export default function MemberInvoicesPage() {
     URL.revokeObjectURL(url);
   }
 
-  if (!invoices) return null;
+  if (!invoices) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-7 w-36" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">{t("invoicesTitle")}</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <Receipt size={18} strokeWidth={2} className="text-primary" />
+        {t("invoicesTitle")}
+      </h1>
 
       {invoices.length === 0 ? (
-        <p className="text-sm opacity-60">{t("invoicesNone")}</p>
+        <p className="text-sm text-muted-foreground">{t("invoicesNone")}</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {invoices.map((inv) => (
-            <li
-              key={inv.id}
-              className="flex items-center justify-between rounded border px-3 py-2 text-sm"
-            >
-              <span>
-                {inv.number}
-                <span className="ml-2 opacity-60">NPR {inv.total_npr}</span>
-              </span>
-              <button onClick={() => download(inv.id, inv.number)} className="text-xs underline">
-                {t("invoicesDownload")}
-              </button>
+            <li key={inv.id}>
+              <Card>
+                <CardContent className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="font-dashboard-mono text-sm">{inv.number}</p>
+                    <p className="font-dashboard-mono text-xs text-muted-foreground">
+                      {formatNpr(inv.total_npr, { symbol: true })}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => download(inv.id, inv.number)}>
+                    <Download size={13} strokeWidth={2} data-icon="inline-start" />
+                    {t("invoicesDownload")}
+                  </Button>
+                </CardContent>
+              </Card>
             </li>
           ))}
         </ul>

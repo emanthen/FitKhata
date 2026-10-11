@@ -12,9 +12,14 @@ import {
   type Exercise,
   type WorkoutPlan,
 } from "@fitkhata/api-client";
+import { Apple, CircleCheck, Dumbbell, HeartPulse } from "lucide-react";
 
 import { getCachedPass } from "@/lib/member/pass";
 import { cacheWorkoutPlan, getCachedWorkoutPlan } from "@/lib/member/db";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function MemberCoachingPage() {
   const t = useTranslations("member");
@@ -72,105 +77,134 @@ export default function MemberCoachingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <HeartPulse size={18} strokeWidth={2} className="text-primary" />
+        {t("title")}
+      </h1>
 
       <section className="space-y-2">
-        <h2 className="text-lg font-medium">{t("coachingSuggestionsTitle")}</h2>
-        {reports.length === 0 && <p className="text-sm opacity-60">{t("coachingNoSuggestions")}</p>}
+        <h2 className="text-sm font-medium text-muted-foreground">{t("coachingSuggestionsTitle")}</h2>
+        {reports.length === 0 && <p className="text-sm text-muted-foreground">{t("coachingNoSuggestions")}</p>}
         <ul className="space-y-2">
           {reports.map((report) => (
-            <li key={report.id} className="space-y-1 rounded border p-3 text-sm">
-              <p className="opacity-60">{t("coachingWeekOf", { date: report.week_start })}</p>
-              {report.suggestions.map((s, i) => (
-                <p key={i}>{s.text_en}</p>
-              ))}
+            <li key={report.id}>
+              <Card>
+                <CardContent className="space-y-1 py-3">
+                  <p className="font-dashboard-mono text-xs text-muted-foreground">
+                    {t("coachingWeekOf", { date: report.week_start })}
+                  </p>
+                  {report.suggestions.map((s, i) => (
+                    <p key={i} className="text-sm">{s.text_en}</p>
+                  ))}
+                </CardContent>
+              </Card>
             </li>
           ))}
         </ul>
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-lg font-medium">{t("coachingQuickLogTitle")}</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">{t("coachingQuickLogTitle")}</h2>
         {!selectedExercise ? (
           <div className="grid grid-cols-2 gap-2">
             {exercises.map((ex) => (
               <button
                 key={ex.id}
                 onClick={() => setSelectedExercise(ex.id)}
-                className="rounded border px-3 py-2 text-left text-sm hover:bg-muted"
+                className="rounded-xl border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/60"
               >
                 {ex.name_en}
               </button>
             ))}
           </div>
         ) : (
-          <div className="space-y-2 rounded border p-3">
-            <div className="flex items-center gap-3">
-              <label className="text-sm">
-                {t("coachingKg")}
-                <input
-                  type="number"
-                  value={kg}
-                  onChange={(e) => setKg(Number(e.target.value))}
-                  className="ml-2 h-8 w-16 rounded border px-2"
-                />
-              </label>
-              <label className="text-sm">
-                {t("coachingReps")}
-                <input
-                  type="number"
-                  value={reps}
-                  onChange={(e) => setReps(Number(e.target.value))}
-                  className="ml-2 h-8 w-16 rounded border px-2"
-                />
-              </label>
+          <Card>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="log-kg" className="text-xs">{t("coachingKg")}</Label>
+                  <Input
+                    id="log-kg"
+                    type="number"
+                    value={kg}
+                    onChange={(e) => setKg(Number(e.target.value))}
+                    className="h-10"
+                  />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="log-reps" className="text-xs">{t("coachingReps")}</Label>
+                  <Input
+                    id="log-reps"
+                    type="number"
+                    value={reps}
+                    onChange={(e) => setReps(Number(e.target.value))}
+                    className="h-10"
+                  />
+                </div>
+              </div>
+              <Button onClick={logSet} size="lg" className="h-11 w-full">
+                {t("coachingSave")}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+        {logged && (
+          <p className="flex items-center gap-1.5 text-sm text-primary">
+            <CircleCheck size={14} strokeWidth={2} />
+            {t("coachingLogged")}
+          </p>
+        )}
+      </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Dumbbell size={15} strokeWidth={2} />
+            {t("planWorkoutTitle")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {planOffline && <p className="mb-2 text-xs text-muted-foreground">{t("planOfflineNotice")}</p>}
+          {!workoutPlan ? (
+            <p className="text-sm text-muted-foreground">{t("planNoWorkout")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {workoutPlan.days.map((day) => (
+                <li key={day.day} className="rounded-lg border p-3 text-sm">
+                  <p className="font-medium capitalize">{day.day}</p>
+                  <ul className="mt-1 space-y-0.5 text-foreground/80">
+                    {day.exercises.map((ex, i) => (
+                      <li key={i} data-testid="workout-exercise" className="font-dashboard-mono">
+                        {exerciseNames[ex.exercise_id]?.name_en ?? ex.exercise_id} &mdash; {ex.sets}&times;
+                        {ex.reps}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Apple size={15} strokeWidth={2} />
+            {t("planDietTitle")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!dietPlan ? (
+            <p className="text-sm text-muted-foreground">{t("planNoDiet")}</p>
+          ) : (
+            <div className="font-dashboard-mono text-sm">
+              <p>{t("planKcalTarget", { count: dietPlan.kcal_target })}</p>
+              <p className="text-muted-foreground">{t("planProteinTarget", { count: dietPlan.protein_g })}</p>
             </div>
-            <button
-              onClick={logSet}
-              className="w-full rounded bg-black px-3 py-2 text-sm text-white"
-            >
-              {t("coachingSave")}
-            </button>
-          </div>
-        )}
-        {logged && <p className="text-sm text-green-700">{t("coachingLogged")}</p>}
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">{t("planWorkoutTitle")}</h2>
-        {planOffline && <p className="text-xs opacity-60">{t("planOfflineNotice")}</p>}
-        {!workoutPlan ? (
-          <p className="text-sm opacity-60">{t("planNoWorkout")}</p>
-        ) : (
-          <ul className="space-y-2">
-            {workoutPlan.days.map((day) => (
-              <li key={day.day} className="rounded border p-3 text-sm">
-                <p className="font-medium capitalize">{day.day}</p>
-                <ul className="mt-1 space-y-0.5 opacity-80">
-                  {day.exercises.map((ex, i) => (
-                    <li key={i} data-testid="workout-exercise">
-                      {exerciseNames[ex.exercise_id]?.name_en ?? ex.exercise_id} — {ex.sets}×
-                      {ex.reps}
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">{t("planDietTitle")}</h2>
-        {!dietPlan ? (
-          <p className="text-sm opacity-60">{t("planNoDiet")}</p>
-        ) : (
-          <div className="rounded border p-3 text-sm">
-            <p>{t("planKcalTarget", { count: dietPlan.kcal_target })}</p>
-            <p className="opacity-70">{t("planProteinTarget", { count: dietPlan.protein_g })}</p>
-          </div>
-        )}
-      </section>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

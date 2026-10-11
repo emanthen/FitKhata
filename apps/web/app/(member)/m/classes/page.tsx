@@ -9,8 +9,13 @@ import {
   listMemberClasses,
   type ClassSchedule,
 } from "@fitkhata/api-client";
+import { CalendarDays, TriangleAlert } from "lucide-react";
 
 import { getCachedPass } from "@/lib/member/pass";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type BookingState = { bookingId: string; status: "booked" | "waitlist" };
 
@@ -64,43 +69,61 @@ export default function MemberClassesPage() {
     }
   }
 
-  if (!classes) return null;
+  if (!classes) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-7 w-32" />
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <Skeleton className="h-16 w-full rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">{t("classesTitle")}</h1>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+        <CalendarDays size={18} strokeWidth={2} className="text-primary" />
+        {t("classesTitle")}
+      </h1>
+      {error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert size={14} strokeWidth={2} />
+          {error}
+        </p>
+      )}
 
       {classes.length === 0 ? (
-        <p className="text-sm opacity-60">{t("classesNone")}</p>
+        <p className="text-sm text-muted-foreground">{t("classesNone")}</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {classes.map((cls) => {
             const booking = bookings[cls.id];
             return (
-              <li
-                key={cls.id}
-                className="flex items-center justify-between rounded border px-3 py-2 text-sm"
-              >
-                <span>
-                  {cls.name}
-                  <span className="ml-2 opacity-60">
-                    {new Date(cls.starts_at).toLocaleString()}
-                  </span>
-                </span>
-                {booking ? (
-                  <button onClick={() => cancel(cls.id)} className="text-xs underline">
-                    {booking.status === "waitlist" ? t("classesWaitlisted") : t("classesBooked")} ·{" "}
-                    {t("classesCancel")}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => book(cls.id)}
-                    className="rounded bg-black px-3 py-1 text-xs text-white"
-                  >
-                    {t("classesBook")}
-                  </button>
-                )}
+              <li key={cls.id}>
+                <Card>
+                  <CardContent className="flex items-center justify-between py-3">
+                    <div>
+                      <p className="text-sm font-medium">{cls.name}</p>
+                      <p className="font-dashboard-mono text-xs text-muted-foreground">
+                        {new Date(cls.starts_at).toLocaleString()}
+                      </p>
+                    </div>
+                    {booking ? (
+                      <div className="flex items-center gap-2">
+                        <Badge variant={booking.status === "waitlist" ? "secondary" : "default"}>
+                          {booking.status === "waitlist" ? t("classesWaitlisted") : t("classesBooked")}
+                        </Badge>
+                        <Button variant="ghost" size="sm" onClick={() => cancel(cls.id)}>
+                          {t("classesCancel")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" onClick={() => book(cls.id)}>
+                        {t("classesBook")}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
               </li>
             );
           })}
