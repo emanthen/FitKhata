@@ -113,7 +113,10 @@ class Notification(TenantModel):
 class SmsWallet(models.Model):
     """One per Organization, not a TenantModel — SMS cost is billed to the
     org as a whole (FR-11.5), the same reasoning as billing.InvoiceCounter
-    being org-scoped rather than per-branch.
+    being org-scoped rather than per-branch. Carries an org-scoped RLS
+    policy (core/migrations/0004_platform_org_rls.py) as a backstop, same
+    as saas/models.py's platform tables — query it under
+    core.context.system_context() as the primary mechanism, not this.
     """
 
     org = models.OneToOneField(

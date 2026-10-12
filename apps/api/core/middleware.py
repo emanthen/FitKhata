@@ -73,21 +73,28 @@ class TenantMiddleware:
             return self.get_response(request)
 
     def _read_only_block(self, gym, path: str) -> HttpResponse | None:
-        """None = allow. Subscription carries no RLS at all (see
-        saas/models.py) so this plain query needs no system_context().
+        """None = allow. Runs before app.gym_ids is ever set for this
+        request (it decides whether tenant scoping even gets a chance to
+        run) — Subscription carries an org-scoped RLS policy
+        (core/migrations/0004_platform_org_rls.py), so without
+        system_context() this would silently see no rows and never block
+        anything, same bootstrapping reasoning as every other
+        pre-tenant-scoping read in this file.
         """
         if path.startswith(READ_ONLY_EXEMPT_PREFIXES):
             return None
 
         from django.http import JsonResponse
 
+        from core.context import system_context
         from saas.models import Subscription
 
-        sub_status = (
-            Subscription.objects.filter(org_id=gym.org_id)
-            .values_list("status", flat=True)
-            .first()
-        )
+        with system_context():
+            sub_status = (
+                Subscription.objects.filter(org_id=gym.org_id)
+                .values_list("status", flat=True)
+                .first()
+            )
         if sub_status not in (Subscription.Status.READ_ONLY, Subscription.Status.SUSPENDED):
             return None
         return JsonResponse(

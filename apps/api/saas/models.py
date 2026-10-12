@@ -1,9 +1,17 @@
 """Platform-level models: FitKhata's own SaaS billing of tenant orgs and the
 super-admin console (Phase 11). Deliberately plain models.Model, never
 TenantModel — these describe orgs themselves (or FitKhata's own staff
-actions), not gym-scoped tenant data, so they carry no org/gym RLS policy.
-Query them only under core.context.system_context(), the same precedent
-gyms.Organization already sets (see its own docstring).
+actions), not gym-scoped tenant data, so app.gym_ids-based tenant_isolation_*
+policies (core/migrations/0002_rls.py) don't apply to them directly.
+
+They DO carry an org-scoped RLS policy (core/migrations/0004_platform_org_rls.py,
+via app_org_ids()) as a backstop, but that's defense-in-depth, not the
+primary mechanism — query them only under core.context.system_context()
+(SET LOCAL ROLE fitkhata_system, BYPASSRLS), the same precedent
+gyms.Organization already sets (see its own docstring). The RLS policy
+exists so a future bug that forgets system_context() fails closed (sees
+nothing) instead of leaking every org's rows, not so request-scoped code
+can read these directly without it.
 """
 
 from __future__ import annotations

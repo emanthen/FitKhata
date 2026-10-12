@@ -8,13 +8,20 @@ Two kinds of test here:
    *every* model with a `gym` field (or Gym itself), so a future tenant model
    added without an RLS policy fails CI automatically instead of silently
    leaking data.
+
+A third section below (TestOrganizationIsolation onward) covers the
+org-scoped platform tables added in core/migrations/0004_platform_org_rls.py
+(Organization, Subscription, SaasInvoice, SupportTicket(+Message),
+SmsWallet(+Tx), PlatformAuditLog) — these aren't gym-scoped TenantModels, so
+they're deliberately outside _tenant_models()'s gym-field check; their
+coverage is these explicit tests instead.
 """
 
 from __future__ import annotations
 
 import os
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import pytest
 from django.apps import apps
@@ -26,6 +33,15 @@ from core.context import system_context
 from core.models import AuditLog
 from gyms.models import Gym, Organization
 from members.models import Member
+from notifications.models import SmsWallet, SmsWalletTx
+from saas.models import (
+    PlatformAuditLog,
+    SaasInvoice,
+    SaasPlan,
+    Subscription,
+    SupportTicket,
+    SupportTicketMessage,
+)
 
 pytestmark = [pytest.mark.rls, pytest.mark.django_db]
 
@@ -259,6 +275,168 @@ class TestGateDeviceIsolation:
             user_id=attendance_tenants["user_a"].id, gym_id=attendance_tenants["gym_a"].id
         )
         assert _raw_ids("attendance_gatedevice") == {attendance_tenants["device_a"].id}
+
+
+@pytest.fixture
+def org_tenants(tenants):
+    """Extends `tenants` with one row per org-scoped platform table —
+    Subscription, SaasInvoice, SupportTicket(+Message), SmsWallet(+Tx),
+    PlatformAuditLog — for both org_a and org_b.
+    """
+    with system_context():
+        plan = SaasPlan.objects.first()
+        sub_a = Subscription.objects.create(
+            org=tenants["org_a"],
+            plan=plan,
+            billing_cycle=Subscription.BillingCycle.MONTHLY,
+            current_period_start=date(2026, 10, 1),
+            current_period_end=date(2026, 10, 31),
+        )
+        sub_b = Subscription.objects.create(
+            org=tenants["org_b"],
+            plan=plan,
+            billing_cycle=Subscription.BillingCycle.MONTHLY,
+            current_period_start=date(2026, 10, 1),
+            current_period_end=date(2026, 10, 31),
+        )
+        invoice_a = SaasInvoice.objects.create(
+            org=tenants["org_a"],
+            number="FK-A-0001",
+            subtotal_npr="999.00",
+            vat_npr="129.87",
+            total_npr="1128.87",
+        )
+        invoice_b = SaasInvoice.objects.create(
+            org=tenants["org_b"],
+            number="FK-B-0001",
+            subtotal_npr="999.00",
+            vat_npr="129.87",
+            total_npr="1128.87",
+        )
+        ticket_a = SupportTicket.objects.create(org=tenants["org_a"], subject="Org A issue")
+        ticket_b = SupportTicket.objects.create(org=tenants["org_b"], subject="Org B issue")
+        message_a = SupportTicketMessage.objects.create(ticket=ticket_a, body="Org A message")
+        message_b = SupportTicketMessage.objects.create(ticket=ticket_b, body="Org B message")
+        wallet_a = SmsWallet.objects.create(org=tenants["org_a"], balance_npr="100.00")
+        wallet_b = SmsWallet.objects.create(org=tenants["org_b"], balance_npr="100.00")
+        tx_a = SmsWalletTx.objects.create(
+            wallet=wallet_a, amount_npr="-1.50", reason=SmsWalletTx.Reason.DEBIT
+        )
+        tx_b = SmsWalletTx.objects.create(
+            wallet=wallet_b, amount_npr="-1.50", reason=SmsWalletTx.Reason.DEBIT
+        )
+        audit_a = PlatformAuditLog.objects.create(org=tenants["org_a"], action="test_action")
+        audit_b = PlatformAuditLog.objects.create(org=tenants["org_b"], action="test_action")
+        audit_null = PlatformAuditLog.objects.create(org=None, action="platform_only_action")
+    return {
+        **tenants,
+        "sub_a": sub_a,
+        "sub_b": sub_b,
+        "invoice_a": invoice_a,
+        "invoice_b": invoice_b,
+        "ticket_a": ticket_a,
+        "ticket_b": ticket_b,
+        "message_a": message_a,
+        "message_b": message_b,
+        "wallet_a": wallet_a,
+        "wallet_b": wallet_b,
+        "tx_a": tx_a,
+        "tx_b": tx_b,
+        "audit_a": audit_a,
+        "audit_b": audit_b,
+        "audit_null": audit_null,
+    }
+
+
+class TestOrganizationIsolation:
+    def test_orm(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert set(Organization.objects.values_list("id", flat=True)) == {
+            org_tenants["org_a"].id
+        }
+
+    def test_raw_sql(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert _raw_ids("gyms_organization") == {org_tenants["org_a"].id}
+
+
+class TestSubscriptionIsolation:
+    def test_orm(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert set(Subscription.objects.values_list("id", flat=True)) == {
+            org_tenants["sub_a"].id
+        }
+
+    def test_raw_sql(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert _raw_ids("saas_subscription") == {org_tenants["sub_a"].id}
+
+
+class TestSaasInvoiceIsolation:
+    def test_orm(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert set(SaasInvoice.objects.values_list("id", flat=True)) == {
+            org_tenants["invoice_a"].id
+        }
+
+    def test_raw_sql(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert _raw_ids("saas_saasinvoice") == {org_tenants["invoice_a"].id}
+
+
+class TestSupportTicketIsolation:
+    def test_orm(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert set(SupportTicket.objects.values_list("id", flat=True)) == {
+            org_tenants["ticket_a"].id
+        }
+
+    def test_raw_sql(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert _raw_ids("saas_supportticket") == {org_tenants["ticket_a"].id}
+
+    def test_message_follows_its_ticket(self, org_tenants):
+        """No direct org_id column — scoped via a join to its ticket."""
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert set(SupportTicketMessage.objects.values_list("id", flat=True)) == {
+            org_tenants["message_a"].id
+        }
+        assert _raw_ids("saas_supportticketmessage") == {org_tenants["message_a"].id}
+
+
+class TestSmsWalletIsolation:
+    def test_orm(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert set(SmsWallet.objects.values_list("id", flat=True)) == {org_tenants["wallet_a"].id}
+
+    def test_raw_sql(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert _raw_ids("notifications_smswallet") == {org_tenants["wallet_a"].id}
+
+    def test_tx_follows_its_wallet(self, org_tenants):
+        """No direct org_id column — scoped via a join to its wallet."""
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert set(SmsWalletTx.objects.values_list("id", flat=True)) == {org_tenants["tx_a"].id}
+        assert _raw_ids("notifications_smswallettx") == {org_tenants["tx_a"].id}
+
+
+class TestPlatformAuditLogIsolation:
+    def test_orm_sees_own_org_but_not_null_org_rows(self, org_tenants):
+        """NULL-org rows (platform-only actions, no org to scope by) must
+        never become visible via org-scoped RLS — they're system_context()
+        only by design, same as a gym-less StaffRole row is NOT meant to
+        become visible to just anyone the way the gym_id IS NULL clause in
+        TestStaffRoleIsolation's policy deliberately allows for org-wide
+        staff roles. Here, NULL means "nobody outside system_context()".
+        """
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert set(PlatformAuditLog.objects.values_list("id", flat=True)) == {
+            org_tenants["audit_a"].id
+        }
+
+    def test_raw_sql(self, org_tenants):
+        _set_session(user_id=org_tenants["user_a"].id, gym_id=org_tenants["gym_a"].id)
+        assert _raw_ids("saas_platformauditlog") == {org_tenants["audit_a"].id}
 
 
 def test_no_gym_selected_sees_nothing(tenants):

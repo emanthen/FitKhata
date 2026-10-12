@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import pytest
 
 from accounts.models import StaffRole, User
-from core.context import system_context
+from core.context import system_context, tenant_context
 from gyms.models import Gym, Organization
 from saas.models import FeatureFlag, PlatformAuditLog, SaasPlan, Subscription
 from saas.services import (
@@ -91,7 +91,14 @@ def test_has_feature_plan_level_gate(gym):
         plan.features = {"red_list": False}
         plan.save(update_fields=["features"])
         _subscribe(gym, SaasPlan.Code.STARTER)
-    assert has_feature(gym.org, "red_list") is False
+
+    # has_feature()'s real callers (saas.decorators.requires_feature) only
+    # ever run during request dispatch, inside TenantMiddleware's already-
+    # scoped transaction — mirror that here rather than calling it with no
+    # gym in scope at all, which the Subscription lookup it falls through
+    # to needs (core/migrations/0004_platform_org_rls.py).
+    with tenant_context([str(gym.pk)]):
+        assert has_feature(gym.org, "red_list") is False
 
 
 def test_has_feature_per_org_override_wins_over_plan(gym):
@@ -119,11 +126,11 @@ def test_start_impersonation_writes_audit_row_with_reason(gym, owner):
     with system_context():
         result = start_impersonation(platform_user, gym.org, "investigating a billing issue")
 
-    assert "access" in result
-    log = PlatformAuditLog.objects.get(
-        org=gym.org, action="impersonation_started", actor=platform_user
-    )
-    assert log.reason == "investigating a billing issue"
+        assert "access" in result
+        log = PlatformAuditLog.objects.get(
+            org=gym.org, action="impersonation_started", actor=platform_user
+        )
+        assert log.reason == "investigating a billing issue"
 
 
 def test_start_impersonation_raises_without_owner(gym):
