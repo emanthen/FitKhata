@@ -15,12 +15,17 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: fitkhata_app
-          POSTGRES_PASSWORD: fitkhata_app
+          # Superuser bootstrap only — the next step creates the actual
+          # app roles (fitkhata_app, non-superuser/non-BYPASSRLS) that
+          # DATABASE_URL below connects as, so RLS policies are genuinely
+          # exercised rather than bypassed. Never connect tests as this
+          # role directly (apps/api/conftest.py now fails loudly if you do).
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: fitkhata
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U fitkhata_app"
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -38,6 +43,8 @@ jobs:
       REDIS_URL: redis://localhost:6379/0
     steps:
       - uses: actions/checkout@v4
+      - name: Create app roles (fitkhata_app, fitkhata_system)
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -d fitkhata -f infra/initdb/001-app-roles.sql
       - uses: astral-sh/setup-uv@v3
         with:
           working-directory: apps/api
@@ -50,6 +57,8 @@ jobs:
       - run: uv run mypy .
         working-directory: apps/api
       - run: uv run pytest
+        working-directory: apps/api
+      - run: uv run pytest -m rls
         working-directory: apps/api
 
   web:
