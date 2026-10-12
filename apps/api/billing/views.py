@@ -587,7 +587,7 @@ class MemberRenewalCallbackView(APIView):
             if payment.status == Payment.Status.COMPLETED:
                 return Response({"status": "completed"})
 
-            callback_data: dict[str, Any] = {"gym": payment.gym}
+            callback_data: dict[str, Any] = {"gym": payment.gym, "payment": payment}
             if provider == GatewayCredential.Provider.ESEWA:
                 callback_data["data"] = request.data.get("data", "")
             elif provider == GatewayCredential.Provider.KHALTI:
