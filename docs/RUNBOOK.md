@@ -242,6 +242,16 @@ and the live-payment verification step.
       dashboard directly, not just FitKhata's side). Only once all three
       are confirmed is this gym's live gateway trustworthy for their real
       members' money.
+      For eSewa specifically: this is also the only way to get a genuine
+      sandbox/live callback `data` payload to add as a permanent test
+      fixture — `billing/gateways/esewa.py`'s response-signature check
+      (fixed in `fix/pilot-blockers`) was built to read eSewa's own
+      `signed_field_names` rather than assume a fixed field list, but it's
+      never been verified against an actual eSewa response from this
+      environment (no live network access here). Capture that NPR 10
+      transaction's raw callback JSON (minus the real signature's secret
+      inputs) and add it to `billing/gateways/tests/test_esewa.py` the
+      first time this step runs for real.
    4. Refund or keep the NPR 10 per the gym's own preference — FitKhata
       has no automatic refund path for this, it's between the gym and
       whoever made the test payment.
