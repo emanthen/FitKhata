@@ -10,7 +10,7 @@ from django.db.models.functions import Greatest
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -150,7 +150,10 @@ class MemberViewSet(TenantViewSet):
         # design, no longer visible under the *source* gym's RLS scope that
         # this request is still running under — the in-memory object
         # transfer_member() already updated is what we have to respond with.
-        member = transfer_member(member, new_gym, actor=request.user)
+        try:
+            member = transfer_member(member, new_gym, actor=request.user)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
         return Response(MemberSerializer(member).data)
 
 

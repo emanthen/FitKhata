@@ -145,6 +145,25 @@ def test_transfer_moves_member_to_target_gym(owner_setup):
         assert Member.objects.get(pk=member_id).gym_id == other_gym.pk
 
 
+def test_transfer_to_other_org_gym_returns_400_not_500(owner_setup):
+    org, gym, owner, _plan = owner_setup
+    with system_context():
+        other_org = Organization.objects.create(name="Other Org")
+        other_org_gym = Gym.objects.create(org=other_org, code="APIT3", name="Other Org Gym")
+
+    client = _client_for(owner, gym)
+    register_resp = client.post(
+        "/api/v1/members/", {"full_name": "Hari Thapa", "phone": "+9779811112223"}, format="json"
+    )
+    member_id = register_resp.json()["id"]
+
+    response = client.post(
+        f"/api/v1/members/{member_id}/transfer/", {"gym_id": str(other_org_gym.pk)}, format="json"
+    )
+
+    assert response.status_code == 400, response.content
+
+
 def test_missing_gym_header_is_forbidden_not_empty_list(owner_setup):
     """No X-Gym-Id means request.role is None (core/middleware.py), and
     every permission class here requires a role — same gate as every other

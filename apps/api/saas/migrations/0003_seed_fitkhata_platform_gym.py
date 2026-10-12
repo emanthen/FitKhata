@@ -50,6 +50,10 @@ class Migration(migrations.Migration):
     dependencies = [
         ("saas", "0002_seed_plans"),
         ("gyms", "0002_organization_vat_inclusive_pricing"),
+        # seed() runs under system_context() (SET LOCAL ROLE fitkhata_system),
+        # which has no table grants until this migration applies them — on a
+        # fresh database Django's planner otherwise orders this one first.
+        ("core", "0003_system_role_grants"),
     ]
 
     operations = [migrations.RunPython(seed, unseed)]

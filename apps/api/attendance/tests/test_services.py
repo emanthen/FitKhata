@@ -17,7 +17,7 @@ from attendance.services import (
     touch_device_heartbeat,
 )
 from billing.services import InvoiceLineInput, create_draft_invoice
-from core.context import system_context
+from core.context import system_context, tenant_context
 from gyms.models import Gym, Organization
 from members.models import Member, Membership, Plan
 
@@ -83,9 +83,15 @@ def test_touch_device_heartbeat_sets_last_seen_at(gym):
     device, _ = register_gate_device(gym, "Front Gate")
     assert device.last_seen_at is None
 
-    touch_device_heartbeat(device)
+    # Mirrors core.middleware's device-auth path (SET LOCAL app.gym_ids to
+    # the device's own gym) — touch_device_heartbeat is a plain RLS-scoped
+    # update, not system_context(), because the real caller is always a
+    # device-authenticated request that already has this scope from
+    # TenantMiddleware._handle_device_auth.
+    with tenant_context([str(gym.pk)]):
+        touch_device_heartbeat(device)
+        device.refresh_from_db()
 
-    device.refresh_from_db()
     assert device.last_seen_at is not None
 
 
