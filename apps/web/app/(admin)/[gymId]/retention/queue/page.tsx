@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   completeCall,
@@ -15,16 +16,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const OUTCOMES: { value: RetentionCallOutcome; label: string }[] = [
-  { value: "reached", label: "Reached" },
-  { value: "no_answer", label: "No answer" },
-  { value: "coming_back", label: "Coming back" },
-  { value: "injured", label: "Injured" },
-  { value: "quitting", label: "Quitting" },
-  { value: "call_back", label: "Call back later" },
+const OUTCOME_KEYS: Record<RetentionCallOutcome, string> = {
+  reached: "retentionOutcomeReached",
+  no_answer: "retentionOutcomeNoAnswer",
+  coming_back: "retentionOutcomeComingBack",
+  injured: "retentionOutcomeInjured",
+  quitting: "retentionOutcomeQuitting",
+  call_back: "retentionOutcomeCallBack",
+};
+const OUTCOMES: RetentionCallOutcome[] = [
+  "reached",
+  "no_answer",
+  "coming_back",
+  "injured",
+  "quitting",
+  "call_back",
 ];
 
 function QueueRow({ call }: { call: RetentionCall }) {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const [callBackOn, setCallBackOn] = useState("");
   const [pendingOutcome, setPendingOutcome] = useState<RetentionCallOutcome | null>(null);
@@ -45,7 +55,7 @@ function QueueRow({ call }: { call: RetentionCall }) {
       });
       queryClient.invalidateQueries({ queryKey: ["retention", "call-queue"] });
     } catch {
-      setError("Couldn't record that outcome.");
+      setError(t("retentionOutcomeError"));
     } finally {
       setSubmitting(false);
     }
@@ -75,14 +85,14 @@ function QueueRow({ call }: { call: RetentionCall }) {
         <div className="flex flex-wrap gap-1.5">
           {OUTCOMES.map((o) => (
             <Button
-              key={o.value}
+              key={o}
               type="button"
               variant="outline"
               disabled={submitting}
-              onClick={() => submit(o.value)}
+              onClick={() => submit(o)}
               className="h-7 px-2 text-xs"
             >
-              {o.label}
+              {t(OUTCOME_KEYS[o])}
             </Button>
           ))}
         </div>
@@ -100,7 +110,7 @@ function QueueRow({ call }: { call: RetentionCall }) {
               disabled={!callBackOn || submitting}
               onClick={() => submit("call_back")}
             >
-              Confirm call-back date
+              {t("retentionConfirmCallBackDate")}
             </Button>
           </div>
         )}
@@ -110,6 +120,7 @@ function QueueRow({ call }: { call: RetentionCall }) {
 }
 
 export default function CallQueuePage() {
+  const t = useTranslations("admin");
   const query = useQuery({
     queryKey: ["retention", "call-queue"],
     queryFn: () => listCallQueue(),
@@ -120,12 +131,9 @@ export default function CallQueuePage() {
       <div>
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <PhoneCall size={18} strokeWidth={2} className="text-primary" />
-          Morning call queue
+          {t("retentionQueueTitle")}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          A call stays on this list until you pick an outcome - there&apos;s no way to dismiss it
-          without one.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("retentionQueueDescription")}</p>
       </div>
 
       {query.isLoading && (
@@ -135,7 +143,7 @@ export default function CallQueuePage() {
         </div>
       )}
       {query.data && query.data.length === 0 && (
-        <p className="text-sm text-muted-foreground">Nothing queued for today. Nice work.</p>
+        <p className="text-sm text-muted-foreground">{t("retentionQueueEmpty")}</p>
       )}
 
       <ul className="space-y-2">

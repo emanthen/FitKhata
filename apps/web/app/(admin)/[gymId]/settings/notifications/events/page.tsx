@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getGymSettings,
@@ -16,14 +17,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const CHANNEL_OPTIONS: NotificationChannel[] = ["push", "whatsapp", "sms", "email"];
 const DEFAULT_ORDER: NotificationChannel[] = ["push", "whatsapp", "sms"];
+const CHANNEL_LABEL_KEYS: Record<NotificationChannel, string> = {
+  push: "notifChannelPush",
+  whatsapp: "notifChannelWhatsapp",
+  sms: "notifChannelSms",
+  email: "notifChannelEmail",
+};
 
 export default function NotificationEventsPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const gym = useQuery({ queryKey: ["gym-settings"], queryFn: getGymSettings });
   const [saving, setSaving] = useState(false);
 
   const events = gym.data?.settings.notification_events ?? {};
-  const order = gym.data?.settings.notification_channel_order ?? DEFAULT_ORDER;
+  const order = (gym.data?.settings.notification_channel_order ??
+    DEFAULT_ORDER) as NotificationChannel[];
 
   async function toggleEvent(eventKey: string) {
     if (!gym.data) return;
@@ -63,25 +72,22 @@ export default function NotificationEventsPage() {
 
   return (
     <div className="max-w-xl space-y-5">
-      <h1 className="text-xl font-semibold tracking-tight">Notification triggers</h1>
+      <h1 className="text-xl font-semibold tracking-tight">{t("notifEventsTitle")}</h1>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ListOrdered size={16} strokeWidth={2} className="text-primary" />
-            Channel order
+            {t("notifEventsChannelOrder")}
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            notify() tries each channel in this order, falling back to the next if a member has
-            no usable destination on the current one.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("notifEventsChannelOrderBody")}</p>
         </CardHeader>
         <CardContent className="space-y-3">
           <ol className="divide-y">
             {order.map((channel, i) => (
               <li key={channel} className="flex items-center justify-between py-2 text-sm">
-                <span className="capitalize">
-                  {i + 1}. {channel}
+                <span>
+                  {i + 1}. {t(CHANNEL_LABEL_KEYS[channel])}
                 </span>
                 <span className="flex gap-1">
                   <Button
@@ -89,7 +95,7 @@ export default function NotificationEventsPage() {
                     size="icon-sm"
                     disabled={i === 0 || saving}
                     onClick={() => moveChannel(i, -1)}
-                    aria-label="Move up"
+                    aria-label={t("notifEventsMoveUp")}
                   >
                     <ArrowUp size={13} strokeWidth={2} />
                   </Button>
@@ -98,7 +104,7 @@ export default function NotificationEventsPage() {
                     size="icon-sm"
                     disabled={i === order.length - 1 || saving}
                     onClick={() => moveChannel(i, 1)}
-                    aria-label="Move down"
+                    aria-label={t("notifEventsMoveDown")}
                   >
                     <ArrowDown size={13} strokeWidth={2} />
                   </Button>
@@ -107,9 +113,12 @@ export default function NotificationEventsPage() {
             ))}
           </ol>
           <p className="text-xs text-muted-foreground">
-            Channels not shown here (
-            {CHANNEL_OPTIONS.filter((c) => !order.includes(c)).join(", ") || "none"}) are never
-            tried automatically.
+            {t("notifEventsChannelsNotShown", {
+              channels:
+                CHANNEL_OPTIONS.filter((c) => !order.includes(c))
+                  .map((c) => t(CHANNEL_LABEL_KEYS[c]))
+                  .join(", ") || t("notifEventsNoneLabel"),
+            })}
           </p>
         </CardContent>
       </Card>
@@ -118,7 +127,7 @@ export default function NotificationEventsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ToggleLeft size={16} strokeWidth={2} className="text-primary" />
-            Events
+            {t("notifEventsEventsHeading")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -134,7 +143,7 @@ export default function NotificationEventsPage() {
                     disabled={saving}
                     onClick={() => toggleEvent(eventKey)}
                   >
-                    {enabled ? "On" : "Off"}
+                    {enabled ? t("notifEventsOn") : t("notifEventsOff")}
                   </Button>
                 </li>
               );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { impersonate, listTenants, tokenStore } from "@fitkhata/api-client";
 import { Building2, UserCog } from "lucide-react";
@@ -37,6 +38,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 };
 
 export default function TenantsPage() {
+  const t = useTranslations("admin");
   const query = useQuery({ queryKey: ["platform", "tenants"], queryFn: listTenants });
   const [target, setTarget] = useState<{ orgId: string; orgName: string } | null>(null);
   const [reason, setReason] = useState("");
@@ -45,7 +47,7 @@ export default function TenantsPage() {
   async function confirmImpersonate() {
     if (!target) return;
     if (!reason.trim()) {
-      setError("A reason is required.");
+      setError(t("platformTenantsReasonRequired"));
       return;
     }
     try {
@@ -59,7 +61,7 @@ export default function TenantsPage() {
         window.location.href = path;
       });
     } catch {
-      setError("Could not start impersonation — the org may have no active owner.");
+      setError(t("platformTenantsImpersonateError"));
     }
   }
 
@@ -67,22 +69,22 @@ export default function TenantsPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <Building2 size={18} strokeWidth={2} className="text-primary" />
-        Tenants
+        {t("platformTenantsTitle")}
       </h1>
       {query.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">{t("platformTenantsLoading")}</p>
       ) : (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Organization</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">MRR</TableHead>
-                <TableHead className="text-right">Members</TableHead>
-                <TableHead>Last active</TableHead>
-                <TableHead className="text-right">Health</TableHead>
+                <TableHead>{t("platformTenantsColOrg")}</TableHead>
+                <TableHead>{t("platformTenantsColPlan")}</TableHead>
+                <TableHead>{t("platformTenantsColStatus")}</TableHead>
+                <TableHead className="text-right">{t("platformTenantsColMrr")}</TableHead>
+                <TableHead className="text-right">{t("platformTenantsColMembers")}</TableHead>
+                <TableHead>{t("platformTenantsColLastActive")}</TableHead>
+                <TableHead className="text-right">{t("platformTenantsColHealth")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -111,7 +113,7 @@ export default function TenantsPage() {
                       }}
                     >
                       <UserCog size={13} strokeWidth={2} data-icon="inline-start" />
-                      Impersonate
+                      {t("platformTenantsImpersonateButton")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -124,23 +126,25 @@ export default function TenantsPage() {
       <Dialog open={target !== null} onOpenChange={(open) => !open && setTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Impersonate {target?.orgName}</DialogTitle>
+            <DialogTitle>
+              {t("platformTenantsImpersonateDialogTitle", { orgName: target?.orgName ?? "" })}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="reason">Reason (required, audited)</Label>
+            <Label htmlFor="reason">{t("platformTenantsReasonLabel")}</Label>
             <Input
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. investigating a billing issue"
+              placeholder={t("platformTenantsReasonPlaceholder")}
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTarget(null)}>
-              Cancel
+              {t("platformTenantsCancelButton")}
             </Button>
-            <Button onClick={confirmImpersonate}>Start (30 min)</Button>
+            <Button onClick={confirmImpersonate}>{t("platformTenantsStartButton")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

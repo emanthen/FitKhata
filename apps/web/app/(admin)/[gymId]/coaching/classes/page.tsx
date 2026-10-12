@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   bookClass,
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function ClassesPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [startsAt, setStartsAt] = useState("");
@@ -58,14 +60,14 @@ export default function ClassesPage() {
     <div className="max-w-3xl space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <CalendarDays size={18} strokeWidth={2} className="text-primary" />
-        Classes
+        {t("coachingClassesTitle")}
       </h1>
 
       <Card>
         <CardContent>
           <form onSubmit={createClass} className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="class-name">Name</Label>
+              <Label htmlFor="class-name">{t("coachingClassesName")}</Label>
               <Input
                 id="class-name"
                 value={name}
@@ -75,7 +77,7 @@ export default function ClassesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="class-starts">Starts at</Label>
+              <Label htmlFor="class-starts">{t("coachingClassesStartsAt")}</Label>
               <Input
                 id="class-starts"
                 type="datetime-local"
@@ -86,7 +88,7 @@ export default function ClassesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="class-capacity">Capacity</Label>
+              <Label htmlFor="class-capacity">{t("coachingClassesCapacity")}</Label>
               <Input
                 id="class-capacity"
                 type="number"
@@ -96,7 +98,7 @@ export default function ClassesPage() {
               />
             </div>
             <Button type="submit" size="sm">
-              Create class
+              {t("coachingClassesCreate")}
             </Button>
           </form>
         </CardContent>
@@ -119,7 +121,7 @@ export default function ClassesPage() {
             </li>
           ))}
           {classList.length === 0 && (
-            <li className="text-sm text-muted-foreground">No classes scheduled.</li>
+            <li className="text-sm text-muted-foreground">{t("coachingClassesEmpty")}</li>
           )}
         </ul>
 
@@ -128,19 +130,19 @@ export default function ClassesPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users size={14} strokeWidth={2} />
-                Bookings
+                {t("coachingClassesBookings")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Member ID"
+                  placeholder={t("coachingClassesMemberIdPlaceholder")}
                   value={memberIdToBook}
                   onChange={(e) => setMemberIdToBook(e.target.value)}
                   className="h-8"
                 />
                 <Button size="sm" onClick={book}>
-                  Book
+                  {t("coachingClassesBook")}
                 </Button>
               </div>
               <ul className="divide-y text-sm">
@@ -159,13 +161,13 @@ export default function ClassesPage() {
                           refresh();
                         }}
                       >
-                        Cancel
+                        {t("coachingClassesCancel")}
                       </Button>
                     )}
                   </li>
                 ))}
                 {bookingList.length === 0 && (
-                  <li className="py-1.5 text-muted-foreground">No bookings yet.</li>
+                  <li className="py-1.5 text-muted-foreground">{t("coachingClassesNoBookings")}</li>
                 )}
               </ul>
             </CardContent>

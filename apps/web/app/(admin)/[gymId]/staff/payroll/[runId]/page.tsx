@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchPayslipPdf,
@@ -39,6 +40,7 @@ async function downloadPdf(payslipId: string, lang: "en" | "ne") {
 
 export default function PayrollRunPage() {
   const { runId } = useParams<{ runId: string }>();
+  const t = useTranslations("admin");
   const { claims } = useAuth();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export default function PayrollRunPage() {
       await setPayslipIncentives(payslipId, value);
       queryClient.invalidateQueries({ queryKey: ["staff", "payroll-run", runId] });
     } catch {
-      setError("Couldn't save incentives — the run may already be finalized.");
+      setError(t("staffPayrollSaveIncentivesError"));
     }
   }
 
@@ -73,7 +75,7 @@ export default function PayrollRunPage() {
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data
         ?.detail;
-      setError(detail ?? "Couldn't finalize this run.");
+      setError(detail ?? t("staffPayrollFinalizeError"));
     }
   }
 
@@ -91,7 +93,7 @@ export default function PayrollRunPage() {
       <div className="flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <Wallet size={18} strokeWidth={2} className="text-primary" />
-          Payroll &mdash; {run.period_bs} BS
+          {t("staffPayrollRunHeading", { period: run.period_bs })}
         </h1>
         <Badge variant={locked ? "default" : "secondary"}>{run.status}</Badge>
       </div>
@@ -106,11 +108,11 @@ export default function PayrollRunPage() {
       {claims?.role === "owner" && !locked && (
         <Button onClick={finalize} size="sm">
           <Lock size={13} strokeWidth={2} data-icon="inline-start" />
-          Finalize - locks this run permanently
+          {t("staffPayrollFinalize")}
         </Button>
       )}
       {claims?.role !== "owner" && !locked && (
-        <p className="text-xs text-muted-foreground">Only an owner can finalize this run.</p>
+        <p className="text-xs text-muted-foreground">{t("staffPayrollOwnerOnly")}</p>
       )}
 
       <Card>
@@ -119,14 +121,14 @@ export default function PayrollRunPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5">Staff</th>
-                  <th className="py-1.5 text-right">Base</th>
-                  <th className="py-1.5 text-right">Commission</th>
-                  <th className="py-1.5 text-right">Incentives</th>
-                  <th className="py-1.5 text-right">Advances</th>
-                  <th className="py-1.5 text-right">TDS</th>
-                  <th className="py-1.5 text-right">Net</th>
-                  <th className="py-1.5">Payslip</th>
+                  <th className="py-1.5">{t("staffPayrollColumnStaff")}</th>
+                  <th className="py-1.5 text-right">{t("staffPayrollColumnBase")}</th>
+                  <th className="py-1.5 text-right">{t("staffPayrollColumnCommission")}</th>
+                  <th className="py-1.5 text-right">{t("staffPayrollColumnIncentives")}</th>
+                  <th className="py-1.5 text-right">{t("staffPayrollColumnAdvances")}</th>
+                  <th className="py-1.5 text-right">{t("staffPayrollColumnTds")}</th>
+                  <th className="py-1.5 text-right">{t("staffPayrollColumnNet")}</th>
+                  <th className="py-1.5">{t("staffPayrollColumnPayslip")}</th>
                 </tr>
               </thead>
               <tbody className="font-dashboard-mono">
@@ -150,7 +152,7 @@ export default function PayrollRunPage() {
                             }
                           />
                           <Button size="sm" className="h-7 px-2 font-sans" onClick={() => saveIncentives(p.id)}>
-                            Save
+                            {t("staffPayrollSave")}
                           </Button>
                         </div>
                       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createWebhookSubscription,
@@ -17,19 +18,28 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const EVENTS: { value: WebhookEvent; label: string }[] = [
-  { value: "member.created", label: "Member created" },
-  { value: "payment.completed", label: "Payment completed" },
-  { value: "checkin.created", label: "Check-in created" },
+const EVENTS: { value: WebhookEvent; labelKey: string }[] = [
+  { value: "member.created", labelKey: "notifWebhookEventMemberCreated" },
+  { value: "payment.completed", labelKey: "notifWebhookEventPaymentCompleted" },
+  { value: "checkin.created", labelKey: "notifWebhookEventCheckinCreated" },
 ];
+const EVENT_LABEL_KEYS: Record<string, string> = Object.fromEntries(
+  EVENTS.map((e) => [e.value, e.labelKey])
+);
 
 const DELIVERY_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
   delivered: "default",
   pending: "secondary",
   failed: "destructive",
 };
+const DELIVERY_STATUS_LABEL_KEYS: Record<string, string> = {
+  delivered: "notifStatusDelivered",
+  pending: "notifWebhookStatusPending",
+  failed: "notifStatusFailed",
+};
 
 export default function WebhooksSettingsPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const subscriptions = useQuery({
     queryKey: ["webhook-subscriptions"],
@@ -55,7 +65,7 @@ export default function WebhooksSettingsPage() {
     e.preventDefault();
     setError(null);
     if (events.length === 0) {
-      setError("Pick at least one event.");
+      setError(t("notifWebhookPickEventError"));
       return;
     }
     setSubmitting(true);
@@ -66,7 +76,7 @@ export default function WebhooksSettingsPage() {
       setEvents([]);
       queryClient.invalidateQueries({ queryKey: ["webhook-subscriptions"] });
     } catch {
-      setError("Couldn't save this webhook — check the URL and secret.");
+      setError(t("notifWebhookSaveError"));
     } finally {
       setSubmitting(false);
     }
@@ -75,28 +85,26 @@ export default function WebhooksSettingsPage() {
   if (planGated) {
     return (
       <div className="max-w-2xl space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight">Webhooks</h1>
-        <p className="text-sm text-muted-foreground">
-          Webhooks are an Enterprise-plan feature. Contact FitKhata support to upgrade.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight">{t("settingsWebhooks")}</h1>
+        <p className="text-sm text-muted-foreground">{t("notifWebhookPlanGated")}</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold tracking-tight">Webhooks</h1>
+      <h1 className="text-xl font-semibold tracking-tight">{t("settingsWebhooks")}</h1>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Webhook size={16} strokeWidth={2} className="text-primary" />
-            Subscriptions
+            {t("notifWebhookSubscriptions")}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Each delivery is signed — verify{" "}
-            <code className="font-dashboard-mono">X-FitKhata-Signature</code> (HMAC-SHA256 of the
-            body, using your secret) before trusting a payload.
+            {t("notifWebhookSignedBody")}{" "}
+            <code className="font-dashboard-mono">X-FitKhata-Signature</code>{" "}
+            {t("notifWebhookSignedBodySuffix")}
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -111,22 +119,26 @@ export default function WebhooksSettingsPage() {
                     className="h-7 text-xs"
                     onClick={() => setExpandedId(expandedId === sub.id ? null : sub.id)}
                   >
-                    {expandedId === sub.id ? "Hide deliveries" : "View deliveries"}
+                    {expandedId === sub.id
+                      ? t("notifWebhookHideDeliveries")
+                      : t("notifWebhookViewDeliveries")}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">{sub.events.join(", ")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {sub.events.map((e) => t(EVENT_LABEL_KEYS[e] ?? "")).join(", ")}
+                </p>
                 {expandedId === sub.id && <DeliveryLog subscriptionId={sub.id} />}
               </li>
             ))}
             {subscriptions.data?.length === 0 && (
-              <li className="py-2 text-sm text-muted-foreground">No webhooks yet.</li>
+              <li className="py-2 text-sm text-muted-foreground">{t("notifWebhookNoneYet")}</li>
             )}
           </ul>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <form onSubmit={submit} className="space-y-3 border-t pt-3">
             <div className="space-y-1.5">
-              <Label htmlFor="webhook-url">Endpoint URL</Label>
+              <Label htmlFor="webhook-url">{t("notifWebhookEndpointUrl")}</Label>
               <Input
                 id="webhook-url"
                 type="url"
@@ -138,7 +150,7 @@ export default function WebhooksSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="webhook-secret">Signing secret</Label>
+              <Label htmlFor="webhook-secret">{t("notifWebhookSigningSecret")}</Label>
               <Input
                 id="webhook-secret"
                 type="password"
@@ -149,7 +161,7 @@ export default function WebhooksSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Events</Label>
+              <Label>{t("notifWebhookEventsLabel")}</Label>
               <div className="flex flex-wrap gap-4">
                 {EVENTS.map((event) => (
                   <label key={event.value} className="flex items-center gap-2 text-sm font-normal">
@@ -157,13 +169,13 @@ export default function WebhooksSettingsPage() {
                       checked={events.includes(event.value)}
                       onCheckedChange={(checked) => toggleEvent(event.value, checked === true)}
                     />
-                    {event.label}
+                    {t(event.labelKey)}
                   </label>
                 ))}
               </div>
             </div>
             <Button type="submit" size="sm" disabled={submitting}>
-              {submitting ? "..." : "Add webhook"}
+              {submitting ? "..." : t("notifWebhookAddButton")}
             </Button>
           </form>
         </CardContent>
@@ -173,6 +185,7 @@ export default function WebhooksSettingsPage() {
 }
 
 function DeliveryLog({ subscriptionId }: { subscriptionId: string }) {
+  const t = useTranslations("admin");
   const deliveries = useQuery({
     queryKey: ["webhook-deliveries", subscriptionId],
     queryFn: () => listWebhookDeliveries(subscriptionId),
@@ -183,14 +196,17 @@ function DeliveryLog({ subscriptionId }: { subscriptionId: string }) {
       {deliveries.data?.map((d) => (
         <li key={d.id} className="flex items-center justify-between text-xs">
           <span>
-            {d.event} · attempt {d.attempt_count}
+            {t(EVENT_LABEL_KEYS[d.event] ?? "")} ·{" "}
+            {t("notifWebhookAttempt", { count: d.attempt_count })}
             {d.response_status ? ` · HTTP ${d.response_status}` : ""}
           </span>
-          <Badge variant={DELIVERY_VARIANT[d.status] ?? "secondary"}>{d.status}</Badge>
+          <Badge variant={DELIVERY_VARIANT[d.status] ?? "secondary"}>
+            {t(DELIVERY_STATUS_LABEL_KEYS[d.status] ?? "")}
+          </Badge>
         </li>
       ))}
       {deliveries.data?.length === 0 && (
-        <li className="text-xs text-muted-foreground">No deliveries yet.</li>
+        <li className="text-xs text-muted-foreground">{t("notifWebhookNoDeliveriesYet")}</li>
       )}
     </ul>
   );

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getCohortRetention } from "@fitkhata/api-client";
 import { ChartColumn } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +23,7 @@ function shade(retained: number, cohortSize: number): string {
 }
 
 export default function CohortRetentionPage() {
+  const t = useTranslations("admin");
   const query = useQuery({
     queryKey: ["reports", "cohort-retention"],
     queryFn: getCohortRetention,
@@ -31,14 +33,14 @@ export default function CohortRetentionPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <ChartColumn size={18} strokeWidth={2} className="text-primary" />
-        Reports
+        {t("reportsHeading")}
       </h1>
       <ReportsTabs />
 
       <Card>
         <CardContent>
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            Cohort retention by join month
+            {t("reportsCohortTitle")}
           </h2>
           {query.isLoading ? (
             <Skeleton className="h-48 w-full" />
@@ -47,8 +49,8 @@ export default function CohortRetentionPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
-                    <th className="py-1.5">Join month</th>
-                    <th className="py-1.5 text-right">Cohort size</th>
+                    <th className="py-1.5">{t("reportsCohortJoinMonth")}</th>
+                    <th className="py-1.5 text-right">{t("reportsCohortSize")}</th>
                     <th className="py-1.5 text-center">M1</th>
                     <th className="py-1.5 text-center">M3</th>
                     <th className="py-1.5 text-center">M6</th>
@@ -75,7 +77,7 @@ export default function CohortRetentionPage() {
                   {(query.data ?? []).length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-6 text-center font-sans text-sm text-muted-foreground">
-                        No cohort data yet.
+                        {t("reportsCohortNoData")}
                       </td>
                     </tr>
                   )}

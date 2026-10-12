@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { tokenStore } from "@fitkhata/api-client";
 
 import { useAuth } from "@/lib/auth";
@@ -17,6 +18,7 @@ function formatRemaining(expEpochSeconds: number): string {
  * are never visually confused.
  */
 export function ImpersonationBanner() {
+  const t = useTranslations("admin");
   const { claims } = useAuth();
   const [, forceTick] = useState(0);
 
@@ -39,14 +41,17 @@ export function ImpersonationBanner() {
   return (
     <div className="mb-4 flex items-center justify-between rounded border border-red-200 bg-red-50 p-3 text-sm dark:border-red-900 dark:bg-red-950">
       <p className="text-red-800 dark:text-red-300">
-        Impersonating this organization — ends in{" "}
-        <span className="font-mono font-medium">{formatRemaining(claims.exp)}</span>
+        {t.rich("platformImpersonationBannerText", {
+          time: () => (
+            <span className="font-mono font-medium">{formatRemaining(claims.exp)}</span>
+          ),
+        })}
       </p>
       <button
         onClick={exit}
         className="shrink-0 rounded border border-red-300 px-2 py-1 text-xs font-medium text-red-800 hover:bg-red-100 dark:border-red-800 dark:text-red-200 dark:hover:bg-red-900"
       >
-        Exit
+        {t("platformImpersonationExitButton")}
       </button>
     </div>
   );

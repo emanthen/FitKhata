@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchVatRegisterExport, getVatRegister } from "@fitkhata/api-client";
 import { ChartColumn, Download } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +26,7 @@ async function downloadExport(fiscalYear: number, format: "csv" | "xlsx" | "pdf"
 }
 
 export default function VatRegisterPage() {
+  const t = useTranslations("admin");
   const { claims } = useAuth();
   const [fiscalYear, setFiscalYear] = useState("");
   const parsedYear = Number(fiscalYear);
@@ -40,19 +42,19 @@ export default function VatRegisterPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <ChartColumn size={18} strokeWidth={2} className="text-primary" />
-        Reports
+        {t("reportsHeading")}
       </h1>
       <ReportsTabs />
 
       {!isOwner ? (
         <p className="text-sm text-muted-foreground">
-          Only an owner can view the VAT sales register.
+          {t("reportsVatOwnerOnly")}
         </p>
       ) : (
         <>
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="fiscal-year">Fiscal year (BS)</Label>
+              <Label htmlFor="fiscal-year">{t("reportsVatFiscalYearLabel")}</Label>
               <Input
                 id="fiscal-year"
                 placeholder="2083"
@@ -65,15 +67,15 @@ export default function VatRegisterPage() {
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => downloadExport(parsedYear, "csv")}>
                   <Download size={13} strokeWidth={2} data-icon="inline-start" />
-                  CSV
+                  {t("reportsCsv")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => downloadExport(parsedYear, "xlsx")}>
                   <Download size={13} strokeWidth={2} data-icon="inline-start" />
-                  XLSX
+                  {t("reportsXlsx")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => downloadExport(parsedYear, "pdf")}>
                   <Download size={13} strokeWidth={2} data-icon="inline-start" />
-                  PDF
+                  {t("reportsPdf")}
                 </Button>
               </div>
             )}
@@ -88,13 +90,13 @@ export default function VatRegisterPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="py-1.5">Bill date (BS)</th>
-                        <th className="py-1.5">Bill no.</th>
-                        <th className="py-1.5">Buyer name</th>
-                        <th className="py-1.5">Buyer PAN</th>
-                        <th className="py-1.5 text-right">Taxable</th>
-                        <th className="py-1.5 text-right">VAT</th>
-                        <th className="py-1.5 text-right">Total</th>
+                        <th className="py-1.5">{t("reportsVatColBillDate")}</th>
+                        <th className="py-1.5">{t("reportsVatColBillNo")}</th>
+                        <th className="py-1.5">{t("reportsVatColBuyerName")}</th>
+                        <th className="py-1.5">{t("reportsVatColBuyerPan")}</th>
+                        <th className="py-1.5 text-right">{t("reportsVatColTaxable")}</th>
+                        <th className="py-1.5 text-right">{t("reportsVatColVat")}</th>
+                        <th className="py-1.5 text-right">{t("reportsVatColTotal")}</th>
                       </tr>
                     </thead>
                     <tbody className="font-dashboard-mono">
@@ -112,7 +114,7 @@ export default function VatRegisterPage() {
                       {query.data.rows.length === 0 && (
                         <tr>
                           <td colSpan={7} className="py-6 text-center font-sans text-sm text-muted-foreground">
-                            No issued invoices for this fiscal year.
+                            {t("reportsVatNoInvoices")}
                           </td>
                         </tr>
                       )}

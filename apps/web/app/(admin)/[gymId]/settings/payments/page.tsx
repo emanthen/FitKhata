@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createGatewayCredential,
@@ -34,6 +35,7 @@ const PROVIDERS: { value: GatewayProvider; label: string }[] = [
 ];
 
 export default function PaymentSettingsPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const credentials = useQuery({
     queryKey: ["gateway-credentials"],
@@ -76,22 +78,24 @@ export default function PaymentSettingsPage() {
       setHmacKey("");
       queryClient.invalidateQueries({ queryKey: ["gateway-credentials"] });
     } catch {
-      setError("Couldn't save this credential — check the details.");
+      setError(t("billingGatewayCredentialError"));
     } finally {
       setSubmitting(false);
     }
   }
 
   async function test(id: string) {
-    setTestResults((prev) => ({ ...prev, [id]: "Testing..." }));
+    setTestResults((prev) => ({ ...prev, [id]: t("billingGatewayTesting") }));
     try {
       const result = await testGatewayConnection(id);
       setTestResults((prev) => ({
         ...prev,
-        [id]: result.ok ? "Reachable" : `Failed: ${result.detail ?? "unknown error"}`,
+        [id]: result.ok
+          ? t("billingGatewayReachable")
+          : t("billingGatewayFailed", { detail: result.detail ?? t("billingGatewayUnknownError") }),
       }));
     } catch {
-      setTestResults((prev) => ({ ...prev, [id]: "Failed: request error" }));
+      setTestResults((prev) => ({ ...prev, [id]: t("billingGatewayFailedRequestError") }));
     }
   }
 
@@ -102,7 +106,7 @@ export default function PaymentSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl font-semibold tracking-tight">Payment settings</h1>
+      <h1 className="text-xl font-semibold tracking-tight">{t("billingPaymentSettingsTitle")}</h1>
 
       <VatSettingsSection />
 
@@ -110,12 +114,9 @@ export default function PaymentSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard size={16} strokeWidth={2} className="text-primary" />
-            Gateway credentials
+            {t("billingGatewayCredentialsTitle")}
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Each gym uses its own eSewa / Khalti / Fonepay merchant account - FitKhata never
-            handles your money directly.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("billingGatewayCredentialsBody")}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <ul className="divide-y">
@@ -126,7 +127,7 @@ export default function PaymentSettingsPage() {
                     {c.provider} &middot; {c.environment}
                   </span>
                   <span className="text-muted-foreground">
-                    {c.is_configured ? "Configured" : "Not configured"}
+                    {c.is_configured ? t("billingGatewayConfigured") : t("billingGatewayNotConfigured")}
                   </span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -137,7 +138,7 @@ export default function PaymentSettingsPage() {
                     onClick={() => test(c.id)}
                   >
                     <Wifi size={13} strokeWidth={2} data-icon="inline-start" />
-                    Test connection
+                    {t("billingGatewayTestConnection")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -146,7 +147,7 @@ export default function PaymentSettingsPage() {
                     onClick={() => remove(c.id)}
                   >
                     <Trash2 size={13} strokeWidth={2} data-icon="inline-start" />
-                    Remove
+                    {t("settingsRemove")}
                   </Button>
                   {testResults[c.id] && (
                     <span className="text-xs text-muted-foreground">{testResults[c.id]}</span>
@@ -155,7 +156,9 @@ export default function PaymentSettingsPage() {
               </li>
             ))}
             {list.length === 0 && (
-              <li className="py-2.5 text-sm text-muted-foreground">No gateways configured yet.</li>
+              <li className="py-2.5 text-sm text-muted-foreground">
+                {t("billingGatewayNoneConfigured")}
+              </li>
             )}
           </ul>
 
@@ -163,7 +166,7 @@ export default function PaymentSettingsPage() {
           <form onSubmit={submit} className="space-y-3 rounded-lg border p-3">
             <div className="flex flex-wrap gap-2">
               <div className="space-y-1.5">
-                <Label htmlFor="provider">Provider</Label>
+                <Label htmlFor="provider">{t("billingGatewayProviderLabel")}</Label>
                 <Select value={provider} onValueChange={(v) => setProvider(v as GatewayProvider)}>
                   <SelectTrigger id="provider" className="h-8 w-36 text-sm">
                     <SelectValue />
@@ -178,7 +181,7 @@ export default function PaymentSettingsPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="environment">Environment</Label>
+                <Label htmlFor="environment">{t("billingGatewayEnvironmentLabel")}</Label>
                 <Select
                   value={environment}
                   onValueChange={(v) => setEnvironment(v as GatewayEnvironment)}
@@ -187,13 +190,13 @@ export default function PaymentSettingsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sandbox">Sandbox</SelectItem>
-                    <SelectItem value="live">Live</SelectItem>
+                    <SelectItem value="sandbox">{t("billingGatewaySandbox")}</SelectItem>
+                    <SelectItem value="live">{t("billingGatewayLive")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="merchant-code">Merchant code</Label>
+                <Label htmlFor="merchant-code">{t("billingGatewayMerchantCodeLabel")}</Label>
                 <Input
                   id="merchant-code"
                   value={merchantCode}
@@ -207,7 +210,7 @@ export default function PaymentSettingsPage() {
             {provider === "fonepay" ? (
               <div className="flex flex-wrap gap-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username">{t("billingGatewayUsernameLabel")}</Label>
                   <Input
                     id="username"
                     value={username}
@@ -216,7 +219,7 @@ export default function PaymentSettingsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t("billingGatewayPasswordLabel")}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -226,7 +229,7 @@ export default function PaymentSettingsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="hmac-key">HMAC key</Label>
+                  <Label htmlFor="hmac-key">{t("billingGatewayHmacKeyLabel")}</Label>
                   <Input
                     id="hmac-key"
                     type="password"
@@ -238,7 +241,7 @@ export default function PaymentSettingsPage() {
               </div>
             ) : (
               <div className="space-y-1.5">
-                <Label htmlFor="secret">Secret key</Label>
+                <Label htmlFor="secret">{t("billingGatewaySecretKeyLabel")}</Label>
                 <Input
                   id="secret"
                   type="password"
@@ -250,7 +253,7 @@ export default function PaymentSettingsPage() {
             )}
 
             <Button type="submit" disabled={submitting}>
-              {submitting ? "..." : "Add credential"}
+              {submitting ? "..." : t("billingGatewayAddCredentialButton")}
             </Button>
           </form>
         </CardContent>
@@ -260,6 +263,7 @@ export default function PaymentSettingsPage() {
 }
 
 function VatSettingsSection() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const org = useQuery({ queryKey: ["organization-settings"], queryFn: getOrgSettings });
   const [saving, setSaving] = useState(false);
@@ -280,21 +284,24 @@ function VatSettingsSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Percent size={16} strokeWidth={2} className="text-primary" />
-          VAT
+          {t("billingVatTitle")}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Whether your plan/item prices already include VAT (sticker price = final price), or VAT
-          is added on top at invoice time. Currently:{" "}
+          {t("billingVatBody")}{" "}
           <strong className="text-foreground">
-            {org.isLoading ? "..." : org.data?.vat_inclusive_pricing ? "inclusive" : "exclusive"}
+            {org.isLoading
+              ? "..."
+              : org.data?.vat_inclusive_pricing
+                ? t("billingVatInclusive")
+                : t("billingVatExclusive")}
           </strong>
         </p>
       </CardHeader>
       <CardContent>
         <Button variant="outline" size="sm" onClick={toggle} disabled={saving || org.isLoading}>
           {org.data?.vat_inclusive_pricing
-            ? "Switch to VAT-exclusive pricing"
-            : "Switch to VAT-inclusive pricing"}
+            ? t("billingVatSwitchToExclusive")
+            : t("billingVatSwitchToInclusive")}
         </Button>
       </CardContent>
     </Card>

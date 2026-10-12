@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPayrollRun, listPayrollRuns, type PayrollRun } from "@fitkhata/api-client";
 import { IdCard, TriangleAlert, Wallet } from "lucide-react";
@@ -21,6 +22,7 @@ function toList(data: PayrollRun[] | { results: PayrollRun[] } | undefined): Pay
 }
 
 export default function PayrollPage() {
+  const t = useTranslations("admin");
   const router = useRouter();
   const queryClient = useQueryClient();
   const [periodBs, setPeriodBs] = useState("");
@@ -39,7 +41,7 @@ export default function PayrollPage() {
       queryClient.invalidateQueries({ queryKey: ["staff", "payroll-runs"] });
       router.push(`payroll/${run.id}`);
     } catch {
-      setError("Couldn't create that payroll run — check the period format (BS YYYY-MM).");
+      setError(t("staffPayrollCreateError"));
     } finally {
       setSubmitting(false);
     }
@@ -49,7 +51,7 @@ export default function PayrollPage() {
     <div className="max-w-2xl space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <IdCard size={18} strokeWidth={2} className="text-primary" />
-        Staff
+        {t("staffPageTitle")}
       </h1>
       <StaffTabs />
 
@@ -57,7 +59,7 @@ export default function PayrollPage() {
         <CardContent className="space-y-3">
           <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="period-bs">Period (BS, YYYY-MM)</Label>
+              <Label htmlFor="period-bs">{t("staffPayrollPeriodLabel")}</Label>
               <Input
                 id="period-bs"
                 placeholder="2083-06"
@@ -68,13 +70,10 @@ export default function PayrollPage() {
               />
             </div>
             <Button type="submit" size="sm" disabled={submitting}>
-              {submitting ? "Computing..." : "Create / recompute run"}
+              {submitting ? t("staffPayrollComputing") : t("staffPayrollCreateRun")}
             </Button>
           </form>
-          <p className="text-xs text-muted-foreground">
-            Creating a run for a period that already has a draft recomputes it in place - safe to
-            re-run after fixing attendance or an advance, as long as it isn&apos;t finalized yet.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("staffPayrollRecomputeHint")}</p>
         </CardContent>
       </Card>
       {error && (
@@ -109,7 +108,7 @@ export default function PayrollPage() {
               </li>
             ))}
             {runs.length === 0 && (
-              <li className="py-2.5 text-sm text-muted-foreground">No payroll runs yet.</li>
+              <li className="py-2.5 text-sm text-muted-foreground">{t("staffPayrollEmpty")}</li>
             )}
           </ul>
         </CardContent>

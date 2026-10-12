@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   listMembers,
@@ -44,6 +45,7 @@ export function RegisterDrawer({
   onOpenChange: (open: boolean) => void;
   onRegistered: () => void;
 }) {
+  const t = useTranslations("admin");
   const [step, setStep] = useState<Step>("form");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -99,7 +101,7 @@ export function RegisterDrawer({
       onRegistered();
       setStep("sell");
     } catch {
-      setError("Couldn't register this member — check the details and try again.");
+      setError(t("membersRegisterError"));
     } finally {
       setLoading(false);
     }
@@ -114,14 +116,14 @@ export function RegisterDrawer({
         {step === "form" && (
           <>
             <SheetHeader>
-              <SheetTitle>Register member</SheetTitle>
-              <SheetDescription>Phone first — we&apos;ll check for an existing member.</SheetDescription>
+              <SheetTitle>{t("membersRegisterDrawerTitle")}</SheetTitle>
+              <SheetDescription>{t("membersRegisterDrawerDescription")}</SheetDescription>
             </SheetHeader>
             <form onSubmit={submitRegistration} className="space-y-4 px-4">
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="space-y-1.5">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t("membersPhoneLabel")}</Label>
                 <Input
                   id="phone"
                   placeholder="+977..."
@@ -131,14 +133,16 @@ export function RegisterDrawer({
                 />
                 {existingMember && (
                   <p className="text-sm text-accent">
-                    {existingMember.full_name} is already registered ({existingMember.member_code}).
-                    Close this drawer and sell them a plan from their profile instead.
+                    {t("membersAlreadyRegistered", {
+                      name: existingMember.full_name,
+                      code: existingMember.member_code,
+                    })}
                   </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="full_name">Full name</Label>
+                <Label htmlFor="full_name">{t("membersFullNameLabel")}</Label>
                 <Input
                   id="full_name"
                   value={fullName}
@@ -148,21 +152,21 @@ export function RegisterDrawer({
               </div>
 
               <div className="space-y-1.5">
-                <Label>Gender</Label>
+                <Label>{t("membersGenderLabel")}</Label>
                 <Select value={gender} onValueChange={setGender}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
+                    <SelectValue placeholder={t("membersGenderPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="male">{t("membersGenderMale")}</SelectItem>
+                    <SelectItem value="female">{t("membersGenderFemale")}</SelectItem>
+                    <SelectItem value="other">{t("membersGenderOther")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="dob">Date of birth (AD)</Label>
+                <Label htmlFor="dob">{t("membersDobLabel")}</Label>
                 <Input
                   id="dob"
                   type="date"
@@ -170,7 +174,7 @@ export function RegisterDrawer({
                   onChange={(e) => setDob(e.target.value)}
                 />
                 {dob && (
-                  <p className="text-xs opacity-60">BS: {adIsoToBsLabel(dob)}</p>
+                  <p className="text-xs opacity-60">{t("membersDobBsLabel", { bs: adIsoToBsLabel(dob) })}</p>
                 )}
               </div>
 
@@ -179,22 +183,22 @@ export function RegisterDrawer({
                   checked={marketingOptIn}
                   onCheckedChange={(checked) => setMarketingOptIn(checked === true)}
                 />
-                OK to send marketing messages
+                {t("membersMarketingOptIn")}
               </label>
 
               <div className="space-y-1.5">
-                <Label>Photo</Label>
+                <Label>{t("membersPhotoLabel")}</Label>
                 <WebcamCaptureView capture={photo} />
               </div>
 
               <div className="space-y-1.5">
-                <Label>Waiver signature</Label>
+                <Label>{t("membersWaiverSignatureLabel")}</Label>
                 <SignaturePadView pad={signature} />
               </div>
 
               <SheetFooter className="px-0">
                 <Button type="submit" disabled={loading || !!existingMember}>
-                  {loading ? "Registering..." : "Register"}
+                  {loading ? t("membersRegistering") : t("membersRegisterSubmitAction")}
                 </Button>
               </SheetFooter>
             </form>
@@ -212,15 +216,18 @@ export function RegisterDrawer({
         {step === "done" && (
           <div className="space-y-4 p-4">
             <SheetHeader className="px-0">
-              <SheetTitle>Done</SheetTitle>
+              <SheetTitle>{t("membersDoneTitle")}</SheetTitle>
             </SheetHeader>
             <p className="text-sm">
-              {registeredMember?.full_name} ({registeredMember?.member_code}) is registered.
+              {t("membersRegisteredConfirmation", {
+                name: registeredMember?.full_name ?? "",
+                code: registeredMember?.member_code ?? "",
+              })}
             </p>
             <div className="flex gap-2">
-              <Button onClick={resetForm}>Register another</Button>
+              <Button onClick={resetForm}>{t("membersRegisterAnother")}</Button>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
+                {t("membersCloseAction")}
               </Button>
             </div>
           </div>
@@ -239,6 +246,7 @@ function SellStep({
   onDone: () => void;
   onSkip: () => void;
 }) {
+  const t = useTranslations("admin");
   const [planId, setPlanId] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -257,7 +265,7 @@ function SellStep({
       });
       onDone();
     } catch {
-      setError("Couldn't sell this plan — check the promo code and try again.");
+      setError(t("membersSellError"));
     } finally {
       setLoading(false);
     }
@@ -266,16 +274,16 @@ function SellStep({
   return (
     <div className="space-y-4">
       <SheetHeader>
-        <SheetTitle>Sell a plan</SheetTitle>
+        <SheetTitle>{t("membersSellPlanTitle")}</SheetTitle>
         <SheetDescription>{member.full_name} ({member.member_code})</SheetDescription>
       </SheetHeader>
       <form onSubmit={submit} className="space-y-4 px-4">
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="space-y-1.5">
-          <Label>Plan</Label>
+          <Label>{t("membersPlanLabel")}</Label>
           <Select value={planId} onValueChange={setPlanId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a plan" />
+              <SelectValue placeholder={t("membersPlanPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {(plans.data ?? []).map((p) => (
@@ -287,15 +295,15 @@ function SellStep({
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="promo">Promo code (optional)</Label>
+          <Label htmlFor="promo">{t("membersPromoCodeLabel")}</Label>
           <Input id="promo" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} />
         </div>
         <SheetFooter className="px-0">
           <Button type="submit" disabled={loading || !planId}>
-            {loading ? "Selling..." : "Sell plan"}
+            {loading ? t("membersSelling") : t("membersSellPlanAction")}
           </Button>
           <Button type="button" variant="outline" onClick={onSkip}>
-            Skip for now
+            {t("membersSkipForNow")}
           </Button>
         </SheetFooter>
       </form>
@@ -358,28 +366,29 @@ function useWebcamCapture() {
 }
 
 function WebcamCaptureView({ capture }: { capture: ReturnType<typeof useWebcamCapture> }) {
+  const t = useTranslations("admin");
   return (
     <div className="space-y-2">
       {capture.previewUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={capture.previewUrl} alt="Captured" className="h-32 w-32 rounded object-cover" />
+        <img src={capture.previewUrl} alt={t("membersCapturedPhotoAlt")} className="h-32 w-32 rounded object-cover" />
       ) : (
         <video ref={capture.videoRef} className="h-32 w-32 rounded bg-black object-cover" muted />
       )}
       <div className="flex gap-2">
         {!capture.streaming && !capture.previewUrl && (
           <Button type="button" variant="outline" size="sm" onClick={capture.start}>
-            Start camera
+            {t("membersStartCamera")}
           </Button>
         )}
         {capture.streaming && (
           <Button type="button" variant="outline" size="sm" onClick={capture.capture}>
-            Capture
+            {t("membersCapture")}
           </Button>
         )}
         {capture.previewUrl && (
           <Button type="button" variant="outline" size="sm" onClick={capture.reset}>
-            Retake
+            {t("membersRetake")}
           </Button>
         )}
       </div>
@@ -442,6 +451,7 @@ function useSignaturePad() {
 }
 
 function SignaturePadView({ pad }: { pad: ReturnType<typeof useSignaturePad> }) {
+  const t = useTranslations("admin");
   return (
     <div className="space-y-2">
       <canvas
@@ -454,7 +464,7 @@ function SignaturePadView({ pad }: { pad: ReturnType<typeof useSignaturePad> }) 
         onPointerUp={pad.onPointerUp}
       />
       <Button type="button" variant="outline" size="sm" onClick={pad.clear}>
-        Clear
+        {t("membersClearSignature")}
       </Button>
     </div>
   );

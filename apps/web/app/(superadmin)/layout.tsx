@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Bell, Building2, Flag, LifeBuoy, LineChart, LogOut, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
@@ -9,26 +10,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS = [
-  { label: "Tenants", href: "/platform/tenants", icon: Building2 },
-  { label: "Metrics", href: "/platform/metrics", icon: LineChart },
-  { label: "Feature flags", href: "/platform/feature-flags", icon: Flag },
-  { label: "Leads", href: "/platform/leads", icon: UserPlus },
-  { label: "Announcements", href: "/platform/announcements", icon: Bell },
-  { label: "Tickets", href: "/platform/tickets", icon: LifeBuoy },
-];
+  { labelKey: "platformNavTenants", href: "/platform/tenants", icon: Building2 },
+  { labelKey: "platformNavMetrics", href: "/platform/metrics", icon: LineChart },
+  { labelKey: "platformNavFeatureFlags", href: "/platform/feature-flags", icon: Flag },
+  { labelKey: "platformNavLeads", href: "/platform/leads", icon: UserPlus },
+  { labelKey: "platformNavAnnouncements", href: "/platform/announcements", icon: Bell },
+  { labelKey: "platformNavTickets", href: "/platform/tickets", icon: LifeBuoy },
+] as const;
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { claims, ready, logout } = useAuth();
+  const t = useTranslations("admin");
 
   if (!ready) return null;
 
   if (!claims?.is_platform_staff) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          This area is for FitKhata platform staff only.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("platformAccessDenied")}</p>
       </div>
     );
   }
@@ -46,7 +46,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             <span className="bg-primary size-2.5 rounded-sm" />
             <span className="text-sm font-semibold tracking-tight">FitKhata</span>
             <Badge variant="outline" className="ml-auto border-accent/40 text-accent">
-              PLATFORM
+              {t("platformBadgeLabel")}
             </Badge>
           </div>
           <nav className="space-y-0.5">
@@ -64,7 +64,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                   }`}
                 >
                   <Icon size={16} strokeWidth={2} />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}
@@ -72,7 +72,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
         </div>
         <Button variant="ghost" size="sm" onClick={logout} className="justify-start text-muted-foreground">
           <LogOut size={14} strokeWidth={2} data-icon="inline-start" />
-          Sign out
+          {t("signOut")}
         </Button>
       </aside>
       <main className="flex-1 p-6">{children}</main>

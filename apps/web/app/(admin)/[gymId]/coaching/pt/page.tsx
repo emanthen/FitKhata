@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createPTPack,
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function PTPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const [memberId, setMemberId] = useState("");
   const [sessionsTotal, setSessionsTotal] = useState("10");
@@ -60,14 +62,14 @@ export default function PTPage() {
     <div className="max-w-3xl space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <Dumbbell size={18} strokeWidth={2} className="text-primary" />
-        Personal training
+        {t("coachingPtTitle")}
       </h1>
 
       <Card>
         <CardContent>
           <form onSubmit={sellPack} className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="pt-member">Member ID</Label>
+              <Label htmlFor="pt-member">{t("coachingPtMemberId")}</Label>
               <Input
                 id="pt-member"
                 value={memberId}
@@ -77,7 +79,7 @@ export default function PTPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pt-sessions">Sessions</Label>
+              <Label htmlFor="pt-sessions">{t("coachingPtSessionsLabel")}</Label>
               <Input
                 id="pt-sessions"
                 type="number"
@@ -87,7 +89,7 @@ export default function PTPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pt-price">Price (NPR)</Label>
+              <Label htmlFor="pt-price">{t("coachingPtPriceNpr")}</Label>
               <Input
                 id="pt-price"
                 value={priceNpr}
@@ -96,7 +98,7 @@ export default function PTPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pt-expires">Expires on</Label>
+              <Label htmlFor="pt-expires">{t("coachingPtExpiresOn")}</Label>
               <Input
                 id="pt-expires"
                 type="date"
@@ -107,7 +109,7 @@ export default function PTPage() {
               />
             </div>
             <Button type="submit" size="sm">
-              Sell pack
+              {t("coachingPtSellPack")}
             </Button>
           </form>
         </CardContent>
@@ -123,18 +125,22 @@ export default function PTPage() {
               }`}
               onClick={() => setSelectedPack(pack.id)}
             >
-              {pack.sessions_used}/{pack.sessions_total} sessions used &middot; expires {pack.expires_on}
+              {t("coachingPtSessionsUsedLine", {
+                used: pack.sessions_used,
+                total: pack.sessions_total,
+                date: pack.expires_on,
+              })}
             </li>
           ))}
           {packList.length === 0 && (
-            <li className="text-sm text-muted-foreground">No PT packs sold yet.</li>
+            <li className="text-sm text-muted-foreground">{t("coachingPtNoPacks")}</li>
           )}
         </ul>
 
         {selectedPack && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Sessions</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">{t("coachingPtSessionsLabel")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex gap-2">
@@ -145,7 +151,7 @@ export default function PTPage() {
                   className="h-8"
                 />
                 <Button size="sm" onClick={scheduleSession}>
-                  Schedule
+                  {t("coachingPtSchedule")}
                 </Button>
               </div>
               <ul className="divide-y text-sm">
@@ -165,12 +171,12 @@ export default function PTPage() {
                       {session.attended && (
                         <CircleCheck size={13} strokeWidth={2} data-icon="inline-start" />
                       )}
-                      {session.attended ? "Attended" : "Mark attended"}
+                      {session.attended ? t("coachingPtAttended") : t("coachingPtMarkAttended")}
                     </Button>
                   </li>
                 ))}
                 {sessionsForPack.length === 0 && (
-                  <li className="py-1.5 text-muted-foreground">No sessions scheduled.</li>
+                  <li className="py-1.5 text-muted-foreground">{t("coachingPtNoSessions")}</li>
                 )}
               </ul>
             </CardContent>

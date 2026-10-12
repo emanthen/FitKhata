@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { getStaffLeaderboard } from "@fitkhata/api-client";
 import { IdCard, Trophy } from "lucide-react";
@@ -11,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { StaffTabs } from "@/components/staff/staff-tabs";
 
 export default function LeaderboardPage() {
+  const t = useTranslations("admin");
   const [periodBs, setPeriodBs] = useState("");
 
   const query = useQuery({
@@ -25,12 +27,12 @@ export default function LeaderboardPage() {
     <div className="max-w-3xl space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <IdCard size={18} strokeWidth={2} className="text-primary" />
-        Staff
+        {t("staffPageTitle")}
       </h1>
       <StaffTabs />
 
       <div className="space-y-1.5">
-        <Label htmlFor="leaderboard-period">Period (BS, YYYY-MM)</Label>
+        <Label htmlFor="leaderboard-period">{t("staffLeaderboardPeriodLabel")}</Label>
         <Input
           id="leaderboard-period"
           placeholder="2083-06"
@@ -45,16 +47,16 @@ export default function LeaderboardPage() {
           <CardContent>
             <h2 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
               <Trophy size={14} strokeWidth={2} />
-              Rankings
+              {t("staffLeaderboardRankings")}
             </h2>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5">Staff</th>
-                  <th className="py-1.5 text-right">Renewals sold</th>
-                  <th className="py-1.5 text-right">Renewals (NPR)</th>
-                  <th className="py-1.5 text-right">Calls completed</th>
-                  <th className="py-1.5 text-right">Saves</th>
+                  <th className="py-1.5">{t("staffLeaderboardColumnStaff")}</th>
+                  <th className="py-1.5 text-right">{t("staffLeaderboardColumnRenewalsSold")}</th>
+                  <th className="py-1.5 text-right">{t("staffLeaderboardColumnRenewalsNpr")}</th>
+                  <th className="py-1.5 text-right">{t("staffLeaderboardColumnCallsCompleted")}</th>
+                  <th className="py-1.5 text-right">{t("staffLeaderboardColumnSaves")}</th>
                 </tr>
               </thead>
               <tbody className="font-dashboard-mono">
@@ -70,7 +72,7 @@ export default function LeaderboardPage() {
                 {rows.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-6 text-center font-sans text-sm text-muted-foreground">
-                      No activity for that period.
+                      {t("staffLeaderboardEmpty")}
                     </td>
                   </tr>
                 )}

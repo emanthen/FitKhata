@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { ChartColumn } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ function daysAgoIso(days: number): string {
 }
 
 export default function ReportsOverviewPage() {
+  const t = useTranslations("admin");
   const [from, setFrom] = useState(daysAgoIso(30));
   const [to, setTo] = useState(todayIso());
 
@@ -72,17 +74,17 @@ export default function ReportsOverviewPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <ChartColumn size={18} strokeWidth={2} className="text-primary" />
-        Reports
+        {t("reportsHeading")}
       </h1>
       <ReportsTabs />
 
       <div className="flex flex-wrap items-end gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="from">From</Label>
+          <Label htmlFor="from">{t("reportsFromLabel")}</Label>
           <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-8" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="to">To</Label>
+          <Label htmlFor="to">{t("reportsToLabel")}</Label>
           <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8" />
         </div>
       </div>
@@ -90,7 +92,7 @@ export default function ReportsOverviewPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Revenue trend</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">{t("reportsRevenueTrendTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {trend.isLoading ? (
@@ -111,14 +113,14 @@ export default function ReportsOverviewPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Plan mix</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">{t("reportsPlanMixTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {mix.isLoading ? (
               <Skeleton className="h-[280px] w-full" />
             ) : mixData.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">
-                No revenue in this range.
+                {t("reportsNoRevenueInRange")}
               </p>
             ) : (
               <ResponsiveContainer width="100%" height={280}>

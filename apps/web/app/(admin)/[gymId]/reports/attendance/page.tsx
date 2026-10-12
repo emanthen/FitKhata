@@ -3,12 +3,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAttendanceHeatmap } from "@fitkhata/api-client";
 import { ChartColumn } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReportsTabs } from "@/components/reports/reports-tabs";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_KEYS = [
+  "reportsWeekdayMon",
+  "reportsWeekdayTue",
+  "reportsWeekdayWed",
+  "reportsWeekdayThu",
+  "reportsWeekdayFri",
+  "reportsWeekdaySat",
+  "reportsWeekdaySun",
+] as const;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 function intensity(count: number, max: number): string {
@@ -21,6 +30,8 @@ function intensity(count: number, max: number): string {
 }
 
 export default function AttendanceHeatmapPage() {
+  const t = useTranslations("admin");
+  const WEEKDAYS = WEEKDAY_KEYS.map((key) => t(key));
   const query = useQuery({
     queryKey: ["reports", "attendance-heatmap"],
     queryFn: getAttendanceHeatmap,
@@ -37,14 +48,14 @@ export default function AttendanceHeatmapPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <ChartColumn size={18} strokeWidth={2} className="text-primary" />
-        Reports
+        {t("reportsHeading")}
       </h1>
       <ReportsTabs />
 
       <Card>
         <CardContent>
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            Attendance by hour of day
+            {t("reportsAttendanceByHourTitle")}
           </h2>
           {query.isLoading ? (
             <Skeleton className="h-48 w-full" />

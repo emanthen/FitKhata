@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { getImportJobStatus, importMembers, type ImportJob } from "@fitkhata/api-client";
 import { CircleCheck, FileSpreadsheet, Loader2, TriangleAlert, Upload } from "lucide-react";
 
@@ -8,7 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+const IMPORT_STATUS_KEY: Record<string, string> = {
+  pending: "membersImportStatusPending",
+  running: "membersImportStatusRunning",
+  done: "membersImportStatusDone",
+  failed: "membersImportStatusFailed",
+};
+
 export default function ImportMembersPage() {
+  const t = useTranslations("admin");
   const [file, setFile] = useState<File | null>(null);
   const [job, setJob] = useState<ImportJob | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +46,7 @@ export default function ImportMembersPage() {
         }
       }, 2000);
     } catch {
-      setError("Couldn't start the import — check the file and try again.");
+      setError(t("membersImportStartError"));
     } finally {
       setUploading(false);
     }
@@ -46,11 +55,8 @@ export default function ImportMembersPage() {
   return (
     <div className="max-w-xl space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Import members</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Upload a CSV or XLSX file with columns: full_name, phone, gender, dob (YYYY-MM-DD), tags
-          (comma-separated), marketing_opt_in.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight">{t("membersImportTitle")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("membersImportColumnsHint")}</p>
       </div>
 
       {error && (
@@ -69,7 +75,7 @@ export default function ImportMembersPage() {
             >
               <FileSpreadsheet size={20} strokeWidth={1.75} className="shrink-0 text-muted-foreground" />
               <span className="text-foreground/80">
-                {file ? file.name : "Choose a CSV or XLSX file"}
+                {file ? file.name : t("membersImportChooseFile")}
               </span>
               <input
                 id="import-file"
@@ -85,7 +91,7 @@ export default function ImportMembersPage() {
               ) : (
                 <Upload size={15} strokeWidth={2} data-icon="inline-start" />
               )}
-              {uploading ? "Starting..." : "Import"}
+              {uploading ? t("membersImportStarting") : t("membersImportAction")}
             </Button>
           </form>
         </CardContent>
@@ -95,10 +101,10 @@ export default function ImportMembersPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              Import status
+              {t("membersImportStatusTitle")}
               <Badge variant={job.status === "failed" ? "destructive" : "secondary"}>
                 {job.status === "done" && <CircleCheck size={11} strokeWidth={2} data-icon="inline-start" />}
-                {job.status}
+                {t(IMPORT_STATUS_KEY[job.status] ?? "membersImportStatusPending")}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -106,7 +112,10 @@ export default function ImportMembersPage() {
             {job.status === "done" && (
               <div className="space-y-2 text-sm">
                 <p className="font-dashboard-mono">
-                  {job.success_count} of {job.total_rows} rows imported successfully.
+                  {t("membersImportRowsSummary", {
+                    success: job.success_count,
+                    total: job.total_rows,
+                  })}
                 </p>
                 {job.error_report && (
                   <a
@@ -115,7 +124,7 @@ export default function ImportMembersPage() {
                     rel="noreferrer"
                     className="text-sm text-primary hover:underline"
                   >
-                    Download error report
+                    {t("membersImportDownloadErrorReport")}
                   </a>
                 )}
               </div>

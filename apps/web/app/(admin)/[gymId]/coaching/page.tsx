@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { approveCoachingReport, getTrainerDashboard, rejectCoachingReport } from "@fitkhata/api-client";
 import { Apple, CalendarDays, Dumbbell, HeartPulse, TriangleAlert, Users } from "lucide-react";
@@ -12,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CoachingDashboardPage() {
   const { gymId } = useParams<{ gymId: string }>();
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: ["coaching", "trainer-dashboard"], queryFn: getTrainerDashboard });
 
@@ -24,29 +26,29 @@ export default function CoachingDashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <HeartPulse size={18} strokeWidth={2} className="text-primary" />
-          Coaching
+          {t("coachingTitle")}
         </h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/${gymId}/coaching/plans/workout`}>
               <Dumbbell size={13} strokeWidth={2} data-icon="inline-start" />
-              Workout
+              {t("coachingNavWorkout")}
             </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href={`/${gymId}/coaching/plans/diet`}>
               <Apple size={13} strokeWidth={2} data-icon="inline-start" />
-              Diet
+              {t("coachingNavDiet")}
             </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href={`/${gymId}/coaching/classes`}>
               <CalendarDays size={13} strokeWidth={2} data-icon="inline-start" />
-              Classes
+              {t("coachingNavClasses")}
             </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/${gymId}/coaching/pt`}>PT</Link>
+            <Link href={`/${gymId}/coaching/pt`}>{t("coachingNavPt")}</Link>
           </Button>
         </div>
       </div>
@@ -59,7 +61,7 @@ export default function CoachingDashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users size={16} strokeWidth={2} className="text-primary" />
-                My clients
+                {t("coachingMyClients")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -78,7 +80,7 @@ export default function CoachingDashboardPage() {
                   </li>
                 ))}
                 {query.data.clients.length === 0 && (
-                  <li className="py-2 text-sm text-muted-foreground">No clients assigned yet.</li>
+                  <li className="py-2 text-sm text-muted-foreground">{t("coachingNoClients")}</li>
                 )}
               </ul>
             </CardContent>
@@ -86,11 +88,8 @@ export default function CoachingDashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Pending approvals</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                AI-drafted suggestions wait here until you approve or reject them - a member never
-                sees anything before that.
-              </p>
+              <CardTitle>{t("coachingPendingApprovals")}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t("coachingPendingApprovalsBody")}</p>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
@@ -98,7 +97,7 @@ export default function CoachingDashboardPage() {
                   <li key={report.id} className="space-y-2 rounded-lg border p-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">
-                        {report.member_name} &middot; week of {report.week_start}
+                        {report.member_name} &middot; {t("coachingWeekOf", { date: report.week_start })}
                       </span>
                       {Array.isArray(report.flags) && report.flags.length > 0 && (
                         <span className="flex items-center gap-1 text-xs text-accent">
@@ -122,7 +121,7 @@ export default function CoachingDashboardPage() {
                           refresh();
                         }}
                       >
-                        Approve
+                        {t("coachingApprove")}
                       </Button>
                       <Button
                         size="sm"
@@ -132,13 +131,13 @@ export default function CoachingDashboardPage() {
                           refresh();
                         }}
                       >
-                        Reject
+                        {t("coachingReject")}
                       </Button>
                     </div>
                   </li>
                 ))}
                 {query.data.pending_approvals.length === 0 && (
-                  <li className="text-sm text-muted-foreground">Nothing waiting on review.</li>
+                  <li className="text-sm text-muted-foreground">{t("coachingNothingWaiting")}</li>
                 )}
               </ul>
             </CardContent>

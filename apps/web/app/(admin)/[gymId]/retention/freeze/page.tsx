@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   confirmBulkFreeze,
   listFreezeHistory,
@@ -25,14 +26,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const REASONS: { value: FreezeReason; label: string }[] = [
-  { value: "dashain", label: "Dashain" },
-  { value: "tihar", label: "Tihar" },
-  { value: "chhath", label: "Chhath" },
-  { value: "travel", label: "Travel" },
-  { value: "injury", label: "Injury" },
-  { value: "other", label: "Other" },
-];
+const REASON_KEYS: Record<FreezeReason, string> = {
+  dashain: "retentionReasonDashain",
+  tihar: "retentionReasonTihar",
+  chhath: "retentionReasonChhath",
+  travel: "retentionReasonTravel",
+  injury: "retentionReasonInjury",
+  other: "retentionReasonOther",
+};
+const REASONS: FreezeReason[] = ["dashain", "tihar", "chhath", "travel", "injury", "other"];
 
 function groupByBatch(freezes: MembershipFreeze[]): Map<string, MembershipFreeze[]> {
   const groups = new Map<string, MembershipFreeze[]>();
@@ -45,6 +47,7 @@ function groupByBatch(freezes: MembershipFreeze[]): Map<string, MembershipFreeze
 }
 
 export default function FreezeWizardPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -71,7 +74,7 @@ export default function FreezeWizardPage() {
       const result = await previewFreeze(startDate, endDate, reason);
       setPreview(result);
     } catch {
-      setError("Couldn't preview this freeze.");
+      setError(t("retentionPreviewError"));
     }
   }
 
@@ -85,7 +88,7 @@ export default function FreezeWizardPage() {
       setEndDate("");
       queryClient.invalidateQueries({ queryKey: ["retention", "freeze-history"] });
     } catch {
-      setError("Couldn't confirm this freeze.");
+      setError(t("retentionConfirmError"));
     } finally {
       setConfirming(false);
     }
@@ -96,7 +99,7 @@ export default function FreezeWizardPage() {
       await revertFreezeBatch(batchId);
       queryClient.invalidateQueries({ queryKey: ["retention", "freeze-history"] });
     } catch {
-      setError("Couldn't undo this batch.");
+      setError(t("retentionUndoError"));
     }
   }
 
@@ -107,11 +110,11 @@ export default function FreezeWizardPage() {
       <div className="space-y-4">
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <Snowflake size={18} strokeWidth={2} className="text-primary" />
-          Festival freeze wizard
+          {t("retentionFreezeWizardTitle")}
         </h1>
         <form onSubmit={runPreview} className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="freeze-start">Start date</Label>
+            <Label htmlFor="freeze-start">{t("retentionStartDate")}</Label>
             <Input
               id="freeze-start"
               type="date"
@@ -125,7 +128,7 @@ export default function FreezeWizardPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="freeze-end">End date</Label>
+            <Label htmlFor="freeze-end">{t("retentionEndDate")}</Label>
             <Input
               id="freeze-end"
               type="date"
@@ -139,7 +142,7 @@ export default function FreezeWizardPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="freeze-reason">Reason</Label>
+            <Label htmlFor="freeze-reason">{t("retentionReason")}</Label>
             <Select
               value={reason}
               onValueChange={(v) => {
@@ -152,15 +155,15 @@ export default function FreezeWizardPage() {
               </SelectTrigger>
               <SelectContent>
                 {REASONS.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>
-                    {r.label}
+                  <SelectItem key={r} value={r}>
+                    {t(REASON_KEYS[r])}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <Button type="submit" size="sm">
-            Preview
+            {t("retentionPreview")}
           </Button>
         </form>
 
@@ -175,7 +178,7 @@ export default function FreezeWizardPage() {
           <Card>
             <CardContent className="space-y-2">
               <p className="text-sm font-medium">
-                {preview.count} active membership{preview.count === 1 ? "" : "s"} will be frozen.
+                {t("retentionActiveMembershipsWillFreeze", { count: preview.count })}
               </p>
               <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
                 {preview.rows.map((row) => (
@@ -183,7 +186,7 @@ export default function FreezeWizardPage() {
                     <span>
                       {row.member_name}
                       {row.would_exceed_max && (
-                        <span className="ml-1 text-accent">(exceeds max freeze days)</span>
+                        <span className="ml-1 text-accent">{t("retentionExceedsMaxFreezeDays")}</span>
                       )}
                     </span>
                     <span className="font-dashboard-mono text-muted-foreground">
@@ -193,7 +196,7 @@ export default function FreezeWizardPage() {
                 ))}
               </ul>
               <Button onClick={confirm} disabled={confirming} size="sm">
-                {confirming ? "..." : "Confirm freeze"}
+                {confirming ? "..." : t("retentionConfirmFreeze")}
               </Button>
             </CardContent>
           </Card>
@@ -202,7 +205,7 @@ export default function FreezeWizardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">Freeze history</CardTitle>
+          <CardTitle className="text-sm text-muted-foreground">{t("retentionFreezeHistory")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="divide-y">
@@ -211,21 +214,24 @@ export default function FreezeWizardPage() {
               return (
                 <li key={batchId} className="flex items-center justify-between py-2.5 text-sm">
                   <span className="font-medium">
-                    {freezes[0].reason} &middot; {freezes.length} membership
-                    {freezes.length === 1 ? "" : "s"} &middot; {freezes[0].start_date} to{" "}
-                    {freezes[0].end_date}
+                    {t("retentionBatchSummary", {
+                      reason: freezes[0].reason,
+                      count: freezes.length,
+                      start: freezes[0].start_date,
+                      end: freezes[0].end_date,
+                    })}
                   </span>
                   {!allReverted && (
                     <Button variant="outline" size="sm" onClick={() => undo(batchId)} className="h-7 text-xs">
-                      Undo
+                      {t("retentionUndo")}
                     </Button>
                   )}
-                  {allReverted && <span className="text-xs text-muted-foreground">Reverted</span>}
+                  {allReverted && <span className="text-xs text-muted-foreground">{t("retentionReverted")}</span>}
                 </li>
               );
             })}
             {batches.size === 0 && (
-              <li className="py-2.5 text-sm text-muted-foreground">No freezes yet.</li>
+              <li className="py-2.5 text-sm text-muted-foreground">{t("retentionNoFreezesYet")}</li>
             )}
           </ul>
         </CardContent>

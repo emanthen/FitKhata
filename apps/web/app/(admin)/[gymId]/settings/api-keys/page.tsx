@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createApiKey,
@@ -17,13 +18,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const SCOPES: { value: ApiKeyScope; label: string }[] = [
-  { value: "members:read", label: "Read members" },
-  { value: "memberships:read", label: "Read memberships" },
-  { value: "invoices:read", label: "Read invoices" },
+const SCOPES: { value: ApiKeyScope; labelKey: string }[] = [
+  { value: "members:read", labelKey: "notifApiKeyScopeMembersRead" },
+  { value: "memberships:read", labelKey: "notifApiKeyScopeMembershipsRead" },
+  { value: "invoices:read", labelKey: "notifApiKeyScopeInvoicesRead" },
 ];
 
 export default function ApiKeysSettingsPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const apiKeys = useQuery({ queryKey: ["api-keys"], queryFn: listApiKeys, retry: false });
 
@@ -44,7 +46,7 @@ export default function ApiKeysSettingsPage() {
     e.preventDefault();
     setError(null);
     if (scopes.length === 0) {
-      setError("Pick at least one scope.");
+      setError(t("notifApiKeyPickScopeError"));
       return;
     }
     setSubmitting(true);
@@ -55,7 +57,7 @@ export default function ApiKeysSettingsPage() {
       setScopes([]);
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
     } catch {
-      setError("Couldn't create the key — check the details.");
+      setError(t("notifApiKeyCreateError"));
     } finally {
       setSubmitting(false);
     }
@@ -69,24 +71,20 @@ export default function ApiKeysSettingsPage() {
   if (planGated) {
     return (
       <div className="max-w-2xl space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight">API keys</h1>
-        <p className="text-sm text-muted-foreground">
-          The public API is an Enterprise-plan feature. Contact FitKhata support to upgrade.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight">{t("settingsApiKeys")}</h1>
+        <p className="text-sm text-muted-foreground">{t("notifApiKeyPlanGated")}</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold tracking-tight">API keys</h1>
+      <h1 className="text-xl font-semibold tracking-tight">{t("settingsApiKeys")}</h1>
 
       {justCreated && (
         <Card className="border-primary/40 bg-primary/5">
           <CardContent className="space-y-1.5">
-            <p className="text-sm font-medium">
-              Copy this key now — it won&apos;t be shown again.
-            </p>
+            <p className="text-sm font-medium">{t("notifApiKeyCopyNow")}</p>
             <code className="block overflow-x-auto rounded-md bg-background px-2.5 py-2 font-dashboard-mono text-sm">
               {justCreated.key}
             </code>
@@ -98,10 +96,10 @@ export default function ApiKeysSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <KeyRound size={16} strokeWidth={2} className="text-primary" />
-            Active keys
+            {t("notifApiKeyActiveKeys")}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Scoped, revocable credentials for third-party integrations against{" "}
+            {t("notifApiKeyScopedCreds")}{" "}
             <code className="font-dashboard-mono">/api/public/v1/</code>.
           </p>
         </CardHeader>
@@ -120,8 +118,8 @@ export default function ApiKeysSettingsPage() {
                     <span className="text-xs text-muted-foreground">
                       {k.scopes.join(", ")}
                       {k.last_used_at
-                        ? ` · last used ${new Date(k.last_used_at).toLocaleString()}`
-                        : " · never used"}
+                        ? ` · ${t("settingsLastUsed", { date: new Date(k.last_used_at).toLocaleString() })}`
+                        : ` · ${t("notifApiKeyNeverUsed")}`}
                     </span>
                   </span>
                   <Button
@@ -130,30 +128,30 @@ export default function ApiKeysSettingsPage() {
                     className="text-destructive hover:text-destructive"
                     onClick={() => revoke(k.id)}
                   >
-                    Revoke
+                    {t("settingsRevoke")}
                   </Button>
                 </li>
               ))}
             {apiKeys.data?.filter((k) => !k.revoked_at).length === 0 && (
-              <li className="py-2 text-sm text-muted-foreground">No active keys yet.</li>
+              <li className="py-2 text-sm text-muted-foreground">{t("notifApiKeyNoneYet")}</li>
             )}
           </ul>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <form onSubmit={submit} className="space-y-3 border-t pt-3">
             <div className="space-y-1.5">
-              <Label htmlFor="key-name">Name</Label>
+              <Label htmlFor="key-name">{t("notifApiKeyNameLabel")}</Label>
               <Input
                 id="key-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Zapier integration"
+                placeholder={t("notifApiKeyNamePlaceholder")}
                 className="h-8 w-64"
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Scopes</Label>
+              <Label>{t("notifApiKeyScopesLabel")}</Label>
               <div className="flex flex-wrap gap-4">
                 {SCOPES.map((scope) => (
                   <label
@@ -164,13 +162,13 @@ export default function ApiKeysSettingsPage() {
                       checked={scopes.includes(scope.value)}
                       onCheckedChange={(checked) => toggleScope(scope.value, checked === true)}
                     />
-                    {scope.label}
+                    {t(scope.labelKey)}
                   </label>
                 ))}
               </div>
             </div>
             <Button type="submit" size="sm" disabled={submitting}>
-              {submitting ? "..." : "Create key"}
+              {submitting ? "..." : t("notifApiKeyCreateButton")}
             </Button>
           </form>
         </CardContent>

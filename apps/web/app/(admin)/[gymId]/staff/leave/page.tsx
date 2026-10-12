@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   approveLeaveRequest,
@@ -32,16 +33,16 @@ function toList<T>(data: T[] | { results: T[] } | undefined): T[] {
   return Array.isArray(data) ? data : data.results;
 }
 
-const KINDS: { value: LeaveKind; label: string }[] = [
-  { value: "sick", label: "Sick" },
-  { value: "casual", label: "Casual" },
-  { value: "festival", label: "Festival" },
-  { value: "unpaid", label: "Unpaid" },
-  { value: "other", label: "Other" },
-];
-
 export default function LeavePage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
+  const KINDS: { value: LeaveKind; label: string }[] = [
+    { value: "sick", label: t("staffLeaveKindSick") },
+    { value: "casual", label: t("staffLeaveKindCasual") },
+    { value: "festival", label: t("staffLeaveKindFestival") },
+    { value: "unpaid", label: t("staffLeaveKindUnpaid") },
+    { value: "other", label: t("staffLeaveKindOther") },
+  ];
   const [staffId, setStaffId] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -77,7 +78,7 @@ export default function LeavePage() {
       setReason("");
       refresh();
     } catch {
-      setError("Couldn't submit that leave request.");
+      setError(t("staffLeaveSubmitError"));
     }
   }
 
@@ -89,7 +90,7 @@ export default function LeavePage() {
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data
         ?.detail;
-      setError(detail ?? "Couldn't approve that request.");
+      setError(detail ?? t("staffLeaveApproveError"));
     }
   }
 
@@ -102,7 +103,7 @@ export default function LeavePage() {
     <div className="max-w-2xl space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <IdCard size={18} strokeWidth={2} className="text-primary" />
-        Staff
+        {t("staffPageTitle")}
       </h1>
       <StaffTabs />
 
@@ -110,10 +111,10 @@ export default function LeavePage() {
         <CardContent>
           <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="leave-staff">Staff</Label>
+              <Label htmlFor="leave-staff">{t("staffLeaveStaffLabel")}</Label>
               <Select value={staffId} onValueChange={setStaffId}>
                 <SelectTrigger id="leave-staff" className="h-8 w-40 text-sm">
-                  <SelectValue placeholder="Choose..." />
+                  <SelectValue placeholder={t("staffLeaveChoosePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {staffList.map((s) => (
@@ -125,7 +126,7 @@ export default function LeavePage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="leave-from">From</Label>
+              <Label htmlFor="leave-from">{t("staffLeaveFromLabel")}</Label>
               <Input
                 id="leave-from"
                 type="date"
@@ -136,7 +137,7 @@ export default function LeavePage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="leave-to">To</Label>
+              <Label htmlFor="leave-to">{t("staffLeaveToLabel")}</Label>
               <Input
                 id="leave-to"
                 type="date"
@@ -147,7 +148,7 @@ export default function LeavePage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="leave-kind">Kind</Label>
+              <Label htmlFor="leave-kind">{t("staffLeaveKindLabel")}</Label>
               <Select value={kind} onValueChange={(v) => setKind(v as LeaveKind)}>
                 <SelectTrigger id="leave-kind" className="h-8 w-32 text-sm">
                   <SelectValue />
@@ -162,7 +163,7 @@ export default function LeavePage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="leave-reason">Reason</Label>
+              <Label htmlFor="leave-reason">{t("staffLeaveReasonLabel")}</Label>
               <Input
                 id="leave-reason"
                 value={reason}
@@ -171,7 +172,7 @@ export default function LeavePage() {
               />
             </div>
             <Button type="submit" size="sm">
-              Submit
+              {t("staffLeaveSubmit")}
             </Button>
           </form>
         </CardContent>
@@ -187,7 +188,7 @@ export default function LeavePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarOff size={15} strokeWidth={2} />
-            Pending approval
+            {t("staffLeavePendingApproval")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -203,16 +204,16 @@ export default function LeavePage() {
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => reject(leave.id)}>
-                    Reject
+                    {t("staffLeaveReject")}
                   </Button>
                   <Button size="sm" onClick={() => approve(leave.id)}>
-                    Approve
+                    {t("staffLeaveApprove")}
                   </Button>
                 </div>
               </li>
             ))}
             {pending.length === 0 && (
-              <li className="py-2.5 text-sm text-muted-foreground">Nothing pending.</li>
+              <li className="py-2.5 text-sm text-muted-foreground">{t("staffLeaveNothingPending")}</li>
             )}
           </ul>
         </CardContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { listLeads } from "@fitkhata/api-client";
 import { UserPlus } from "lucide-react";
@@ -22,30 +23,30 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 };
 
 export default function LeadsPage() {
+  const t = useTranslations("admin");
   const query = useQuery({ queryKey: ["platform", "leads"], queryFn: listLeads });
 
   return (
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <UserPlus size={18} strokeWidth={2} className="text-primary" />
-        Leads
+        {t("platformLeadsTitle")}
       </h1>
       <p className="text-sm text-muted-foreground">
-        Captured from Facebook Lead Ads. This is a flat log, not a pipeline — Meta's webhook only
-        delivers a <code className="font-dashboard-mono">leadgen_id</code>, so follow up in Meta's
-        own Lead Ads form response list for the full contact details until a Graph API lookup is
-        wired up here.
+        {t.rich("platformLeadsBody", {
+          code: (chunks) => <code className="font-dashboard-mono">{chunks}</code>,
+        })}
       </p>
 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Captured</TableHead>
+            <TableHead>{t("platformLeadsColName")}</TableHead>
+            <TableHead>{t("platformLeadsColPhone")}</TableHead>
+            <TableHead>{t("platformLeadsColEmail")}</TableHead>
+            <TableHead>{t("platformLeadsColSource")}</TableHead>
+            <TableHead>{t("platformLeadsColStatus")}</TableHead>
+            <TableHead>{t("platformLeadsColCaptured")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -72,7 +73,7 @@ export default function LeadsPage() {
           {!query.isLoading && (query.data ?? []).length === 0 && (
             <TableRow>
               <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                No leads captured yet.
+                {t("platformLeadsEmpty")}
               </TableCell>
             </TableRow>
           )}

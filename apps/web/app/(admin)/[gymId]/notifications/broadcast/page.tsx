@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   estimateBroadcast,
   sendBroadcast,
@@ -22,22 +23,23 @@ import {
 } from "@/components/ui/select";
 import { formatNpr } from "@/lib/money";
 
-const SEGMENTS: { value: BroadcastSegment; label: string; needsValue: boolean }[] = [
-  { value: "expired", label: "Expired members", needsValue: false },
-  { value: "red_list", label: "Red list", needsValue: false },
-  { value: "plan", label: "On a specific plan", needsValue: true },
-  { value: "gender", label: "Gender", needsValue: true },
-  { value: "tag", label: "Tag", needsValue: true },
+const SEGMENTS: { value: BroadcastSegment; labelKey: string; needsValue: boolean }[] = [
+  { value: "expired", labelKey: "notifSegmentExpired", needsValue: false },
+  { value: "red_list", labelKey: "notifSegmentRedList", needsValue: false },
+  { value: "plan", labelKey: "notifSegmentPlan", needsValue: true },
+  { value: "gender", labelKey: "notifSegmentGender", needsValue: true },
+  { value: "tag", labelKey: "notifSegmentTag", needsValue: true },
 ];
 
-const CHANNELS: { value: NotificationChannel; label: string }[] = [
-  { value: "sms", label: "SMS" },
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "push", label: "Push" },
-  { value: "email", label: "Email" },
+const CHANNELS: { value: NotificationChannel; labelKey: string }[] = [
+  { value: "sms", labelKey: "notifChannelSms" },
+  { value: "whatsapp", labelKey: "notifChannelWhatsapp" },
+  { value: "push", labelKey: "notifChannelPush" },
+  { value: "email", labelKey: "notifChannelEmail" },
 ];
 
 export default function BroadcastComposerPage() {
+  const t = useTranslations("admin");
   const [segment, setSegment] = useState<BroadcastSegment>("expired");
   const [segmentValue, setSegmentValue] = useState("");
   const [channel, setChannel] = useState<NotificationChannel>("sms");
@@ -64,7 +66,7 @@ export default function BroadcastComposerPage() {
       const result = await estimateBroadcast({ segment, segment_value: segmentValue, channel });
       setEstimate(result);
     } catch {
-      setError("Couldn't estimate this broadcast.");
+      setError(t("notifBroadcastEstimateError"));
     }
   }
 
@@ -82,7 +84,7 @@ export default function BroadcastComposerPage() {
       setSent({ recipient_count: broadcast.recipient_count, cost_npr: broadcast.cost_npr });
       setEstimate(null);
     } catch {
-      setError("Couldn't send this broadcast.");
+      setError(t("notifBroadcastSendError"));
     } finally {
       setSending(false);
     }
@@ -93,13 +95,15 @@ export default function BroadcastComposerPage() {
       <div className="max-w-md space-y-4">
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <CircleCheck size={18} strokeWidth={2} className="text-primary" />
-          Broadcast sent
+          {t("notifBroadcastSentTitle")}
         </h1>
         <p className="text-sm">
-          Reached {sent.recipient_count} member{sent.recipient_count === 1 ? "" : "s"} for{" "}
-          {formatNpr(sent.cost_npr, { symbol: true })}.
+          {t("notifBroadcastReached", {
+            count: sent.recipient_count,
+            cost: formatNpr(sent.cost_npr, { symbol: true }),
+          })}
         </p>
-        <Button onClick={() => setSent(null)}>Send another</Button>
+        <Button onClick={() => setSent(null)}>{t("notifBroadcastSendAnother")}</Button>
       </div>
     );
   }
@@ -108,7 +112,7 @@ export default function BroadcastComposerPage() {
     <div className="max-w-xl space-y-4">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <Megaphone size={18} strokeWidth={2} className="text-primary" />
-        Broadcast
+        {t("settingsBroadcast")}
       </h1>
       {error && (
         <p className="flex items-center gap-1.5 text-sm text-destructive">
@@ -122,7 +126,7 @@ export default function BroadcastComposerPage() {
           <form onSubmit={preview} className="space-y-4">
             <div className="flex flex-wrap gap-2">
               <div className="space-y-1.5">
-                <Label htmlFor="segment">Segment</Label>
+                <Label htmlFor="segment">{t("notifSegmentLabel")}</Label>
                 <Select
                   value={segment}
                   onValueChange={(v) => {
@@ -136,7 +140,7 @@ export default function BroadcastComposerPage() {
                   <SelectContent>
                     {SEGMENTS.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
-                        {s.label}
+                        {t(s.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -144,7 +148,7 @@ export default function BroadcastComposerPage() {
               </div>
               {needsValue && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="segment-value">Value</Label>
+                  <Label htmlFor="segment-value">{t("notifSegmentValueLabel")}</Label>
                   <Input
                     id="segment-value"
                     value={segmentValue}
@@ -157,7 +161,7 @@ export default function BroadcastComposerPage() {
                 </div>
               )}
               <div className="space-y-1.5">
-                <Label htmlFor="channel">Channel</Label>
+                <Label htmlFor="channel">{t("notifChannelLabel")}</Label>
                 <Select
                   value={channel}
                   onValueChange={(v) => {
@@ -171,7 +175,7 @@ export default function BroadcastComposerPage() {
                   <SelectContent>
                     {CHANNELS.map((c) => (
                       <SelectItem key={c.value} value={c.value}>
-                        {c.label}
+                        {t(c.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -180,7 +184,7 @@ export default function BroadcastComposerPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="body-ne">Message (Nepali)</Label>
+              <Label htmlFor="body-ne">{t("notifMessageNepali")}</Label>
               <textarea
                 id="body-ne"
                 value={bodyNe}
@@ -190,7 +194,7 @@ export default function BroadcastComposerPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="body-en">Message (English)</Label>
+              <Label htmlFor="body-en">{t("notifMessageEnglish")}</Label>
               <textarea
                 id="body-en"
                 value={bodyEn}
@@ -201,7 +205,7 @@ export default function BroadcastComposerPage() {
             </div>
 
             <Button type="submit" size="sm">
-              Preview
+              {t("notifPreviewButton")}
             </Button>
           </form>
         </CardContent>
@@ -211,11 +215,11 @@ export default function BroadcastComposerPage() {
         <Card>
           <CardContent className="space-y-2">
             <p className="font-dashboard-mono text-sm font-medium">
-              {estimate.recipient_count} recipient{estimate.recipient_count === 1 ? "" : "s"}{" "}
-              &middot; {formatNpr(estimate.cost_npr, { symbol: true })}
+              {t("notifRecipientCount", { count: estimate.recipient_count })} &middot;{" "}
+              {formatNpr(estimate.cost_npr, { symbol: true })}
             </p>
             <Button onClick={confirm} disabled={sending} size="sm">
-              {sending ? "..." : "Send broadcast"}
+              {sending ? "..." : t("notifSendBroadcastButton")}
             </Button>
           </CardContent>
         </Card>

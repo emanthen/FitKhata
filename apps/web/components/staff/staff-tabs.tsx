@@ -2,15 +2,7 @@
 
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-
-const TABS = [
-  { label: "Roles", href: "" },
-  { label: "Payroll", href: "/payroll" },
-  { label: "Roster", href: "/roster" },
-  { label: "Leave", href: "/leave" },
-  { label: "Checklists", href: "/checklists" },
-  { label: "Leaderboard", href: "/leaderboard" },
-];
+import { useTranslations } from "next-intl";
 
 /** Shared tab row for every /staff/* sub-page — accounts.StaffRole's own
  * page.tsx stays the "Roles" tab unchanged; these are siblings, not a
@@ -19,7 +11,17 @@ const TABS = [
 export function StaffTabs() {
   const { gymId } = useParams<{ gymId: string }>();
   const pathname = usePathname();
+  const t = useTranslations("admin");
   const base = `/${gymId}/staff`;
+
+  const TABS = [
+    { label: t("staffTabsRoles"), href: "" },
+    { label: t("staffTabsPayroll"), href: "/payroll" },
+    { label: t("staffTabsRoster"), href: "/roster" },
+    { label: t("staffTabsLeave"), href: "/leave" },
+    { label: t("staffTabsChecklists"), href: "/checklists" },
+    { label: t("staffTabsLeaderboard"), href: "/leaderboard" },
+  ];
 
   return (
     <nav className="flex gap-1 border-b pb-2 text-sm">

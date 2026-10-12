@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createTemplate,
@@ -26,11 +27,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const CHANNELS: { value: NotificationChannel; label: string }[] = [
-  { value: "sms", label: "SMS" },
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "push", label: "Push" },
-  { value: "email", label: "Email" },
+const CHANNELS: { value: NotificationChannel; labelKey: string }[] = [
+  { value: "sms", labelKey: "notifChannelSms" },
+  { value: "whatsapp", labelKey: "notifChannelWhatsapp" },
+  { value: "push", labelKey: "notifChannelPush" },
+  { value: "email", labelKey: "notifChannelEmail" },
 ];
 
 // Sample values for the live preview — not what a real event would send,
@@ -72,6 +73,7 @@ function LanguageEditor({
   templateKey: TemplateKey;
   channel: NotificationChannel;
 }) {
+  const t = useTranslations("admin");
   const [body, setBody] = useState(override?.body ?? defaultBody);
   const [saving, setSaving] = useState(false);
 
@@ -98,17 +100,18 @@ function LanguageEditor({
         className="h-28 w-full rounded-lg border border-input bg-transparent p-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       />
       <div className="rounded-lg border bg-muted/40 p-2.5 text-sm">
-        <p className="mb-1 text-xs font-medium text-muted-foreground">Preview</p>
+        <p className="mb-1 text-xs font-medium text-muted-foreground">{t("notifTemplatePreview")}</p>
         {renderPreview(body)}
       </div>
       <Button size="sm" onClick={save} disabled={saving}>
-        {saving ? "..." : override ? "Update" : "Save override"}
+        {saving ? "..." : override ? t("notifTemplateUpdate") : t("notifTemplateSaveOverride")}
       </Button>
     </div>
   );
 }
 
 export default function TemplateEditorPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const [key, setKey] = useState<TemplateKey>(TEMPLATE_KEYS[0]);
   const [channel, setChannel] = useState<NotificationChannel>("sms");
@@ -139,18 +142,14 @@ export default function TemplateEditorPage() {
       <div>
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <MessageSquareText size={18} strokeWidth={2} className="text-primary" />
-          Notification templates
+          {t("settingsTemplates")}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Editing here creates your own override for this branch&apos;s organization - the
-          platform default stays as the fallback for every key/channel/language you haven&apos;t
-          customized.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("notifTemplateOverrideBody")}</p>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="template-key">Event</Label>
+          <Label htmlFor="template-key">{t("notifTemplateEventLabel")}</Label>
           <Select value={key} onValueChange={(v) => setKey(v as TemplateKey)}>
             <SelectTrigger id="template-key" className="w-56">
               <SelectValue />
@@ -165,7 +164,7 @@ export default function TemplateEditorPage() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="template-channel">Channel</Label>
+          <Label htmlFor="template-channel">{t("notifChannelLabel")}</Label>
           <Select value={channel} onValueChange={(v) => setChannel(v as NotificationChannel)}>
             <SelectTrigger id="template-channel" className="w-40">
               <SelectValue />
@@ -173,7 +172,7 @@ export default function TemplateEditorPage() {
             <SelectContent>
               {CHANNELS.map((c) => (
                 <SelectItem key={c.value} value={c.value}>
-                  {c.label}
+                  {t(c.labelKey)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -186,7 +185,7 @@ export default function TemplateEditorPage() {
           <LanguageEditor
             key={`${key}-${channel}-ne`}
             language="ne"
-            label="Nepali"
+            label={t("notifTemplateLanguageNepali")}
             override={neOverride}
             defaultBody={neDefault}
             onSaved={refresh}
@@ -196,7 +195,7 @@ export default function TemplateEditorPage() {
           <LanguageEditor
             key={`${key}-${channel}-en`}
             language="en"
-            label="English"
+            label={t("notifTemplateLanguageEnglish")}
             override={enOverride}
             defaultBody={enDefault}
             onSaved={refresh}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createStaffShift,
@@ -31,6 +32,7 @@ function toList<T>(data: T[] | { results: T[] } | undefined): T[] {
 }
 
 export default function RosterPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const [staffId, setStaffId] = useState("");
   const [date, setDate] = useState("");
@@ -62,7 +64,7 @@ export default function RosterPage() {
       if (data?.conflicting_shift_id) {
         setError(data.detail);
       } else {
-        setError("Couldn't create that shift.");
+        setError(t("staffRosterCreateError"));
       }
     }
   }
@@ -71,7 +73,7 @@ export default function RosterPage() {
     <div className="max-w-3xl space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <IdCard size={18} strokeWidth={2} className="text-primary" />
-        Staff
+        {t("staffPageTitle")}
       </h1>
       <StaffTabs />
 
@@ -79,10 +81,10 @@ export default function RosterPage() {
         <CardContent>
           <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="roster-staff">Staff</Label>
+              <Label htmlFor="roster-staff">{t("staffRosterStaffLabel")}</Label>
               <Select value={staffId} onValueChange={setStaffId}>
                 <SelectTrigger id="roster-staff" className="h-8 w-48 text-sm">
-                  <SelectValue placeholder="Choose..." />
+                  <SelectValue placeholder={t("staffRosterChoosePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {staffList.map((s) => (
@@ -94,7 +96,7 @@ export default function RosterPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="roster-date">Date</Label>
+              <Label htmlFor="roster-date">{t("staffRosterDateLabel")}</Label>
               <Input
                 id="roster-date"
                 type="date"
@@ -105,7 +107,7 @@ export default function RosterPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="roster-start">Start</Label>
+              <Label htmlFor="roster-start">{t("staffRosterStartLabel")}</Label>
               <Input
                 id="roster-start"
                 type="time"
@@ -115,7 +117,7 @@ export default function RosterPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="roster-end">End</Label>
+              <Label htmlFor="roster-end">{t("staffRosterEndLabel")}</Label>
               <Input
                 id="roster-end"
                 type="time"
@@ -125,7 +127,7 @@ export default function RosterPage() {
               />
             </div>
             <Button type="submit" size="sm">
-              Add shift
+              {t("staffRosterAddShift")}
             </Button>
           </form>
         </CardContent>
@@ -150,7 +152,7 @@ export default function RosterPage() {
               </li>
             ))}
             {shifts.length === 0 && (
-              <li className="py-2 text-sm text-muted-foreground">No shifts scheduled.</li>
+              <li className="py-2 text-sm text-muted-foreground">{t("staffRosterEmpty")}</li>
             )}
           </ul>
         </CardContent>

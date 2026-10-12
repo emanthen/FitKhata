@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createDietPlan,
@@ -35,6 +36,7 @@ function computeTotals(
 }
 
 export default function DietPlanBuilderPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [items, setItems] = useState<DietPlanMealItem[]>([]);
@@ -83,13 +85,13 @@ export default function DietPlanBuilderPage() {
     <div className="max-w-2xl space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <Apple size={18} strokeWidth={2} className="text-primary" />
-        Diet plan builder
+        {t("coachingDietTitle")}
       </h1>
 
       <Card>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="diet-name">Plan name</Label>
+            <Label htmlFor="diet-name">{t("coachingDietPlanName")}</Label>
             <Input
               id="diet-name"
               value={name}
@@ -124,30 +126,30 @@ export default function DietPlanBuilderPage() {
                   size="icon-sm"
                   className="text-destructive hover:text-destructive"
                   onClick={() => removeItem(i)}
-                  aria-label="Remove item"
+                  aria-label={t("coachingDietRemoveItem")}
                 >
                   <X size={14} strokeWidth={2} />
                 </Button>
               </div>
             ))}
             <Button type="button" size="sm" variant="outline" onClick={addItem}>
-              + Food item
+              {t("coachingDietAddFoodItem")}
             </Button>
           </div>
 
           <p className="font-dashboard-mono text-sm font-medium">
-            Live totals: {totals.kcal} kcal &middot; {totals.protein}g protein
+            {t("coachingDietLiveTotals", { kcal: totals.kcal, protein: totals.protein })}
           </p>
 
           <Button onClick={save} disabled={saving || !name || items.length === 0}>
-            {saving ? "..." : "Save plan"}
+            {saving ? "..." : t("coachingDietSavePlan")}
           </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">Existing plans</CardTitle>
+          <CardTitle className="text-sm text-muted-foreground">{t("coachingDietExistingPlans")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="divide-y text-sm">
@@ -155,12 +157,12 @@ export default function DietPlanBuilderPage() {
               <li key={plan.id} className="py-2">
                 {plan.name} &middot;{" "}
                 <span className="font-dashboard-mono">
-                  {plan.kcal_target} kcal &middot; {plan.protein_g}g protein
+                  {t("coachingDietKcalProtein", { kcal: plan.kcal_target, protein: plan.protein_g })}
                 </span>
               </li>
             ))}
             {planList.length === 0 && (
-              <li className="py-2 text-muted-foreground">No plans yet.</li>
+              <li className="py-2 text-muted-foreground">{t("coachingDietNoPlans")}</li>
             )}
           </ul>
         </CardContent>

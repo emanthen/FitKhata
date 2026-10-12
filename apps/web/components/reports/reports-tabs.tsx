@@ -2,21 +2,23 @@
 
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-
-const TABS = [
-  { label: "Overview", href: "" },
-  { label: "Attendance", href: "/attendance" },
-  { label: "Cohorts", href: "/cohorts" },
-  { label: "Dues", href: "/dues" },
-  { label: "VAT register", href: "/vat-register" },
-  { label: "Accounting export", href: "/accounting-export" },
-];
+import { useTranslations } from "next-intl";
 
 /** Shared tab row for every /reports/* sub-page — mirrors staff-tabs.tsx. */
 export function ReportsTabs() {
   const { gymId } = useParams<{ gymId: string }>();
   const pathname = usePathname();
+  const t = useTranslations("admin");
   const base = `/${gymId}/reports`;
+
+  const TABS = [
+    { label: t("reportsTabOverview"), href: "" },
+    { label: t("reportsTabAttendance"), href: "/attendance" },
+    { label: t("reportsTabCohorts"), href: "/cohorts" },
+    { label: t("reportsTabDues"), href: "/dues" },
+    { label: t("reportsTabVatRegister"), href: "/vat-register" },
+    { label: t("reportsTabAccountingExport"), href: "/accounting-export" },
+  ];
 
   return (
     <nav className="flex gap-1 border-b pb-2 text-sm">

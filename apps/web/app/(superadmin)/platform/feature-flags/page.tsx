@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listFeatureFlags, upsertFeatureFlag } from "@fitkhata/api-client";
 import { Flag } from "lucide-react";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/table";
 
 export default function FeatureFlagsPage() {
+  const t = useTranslations("admin");
   const query = useQuery({ queryKey: ["platform", "feature-flags"], queryFn: listFeatureFlags });
   const queryClient = useQueryClient();
   const [key, setKey] = useState("");
@@ -46,34 +48,34 @@ export default function FeatureFlagsPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <Flag size={18} strokeWidth={2} className="text-primary" />
-        Feature flags
+        {t("platformFeatureFlagsTitle")}
       </h1>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1.5">
-              <Label htmlFor="flag-key">Key</Label>
+              <Label htmlFor="flag-key">{t("platformFeatureFlagsKeyLabel")}</Label>
               <Input
                 id="flag-key"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="e.g. ai_insights"
+                placeholder={t("platformFeatureFlagsKeyPlaceholder")}
                 className="h-8 w-56"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="flag-rollout">Rollout %</Label>
+              <Label htmlFor="flag-rollout">{t("platformFeatureFlagsRolloutLabel")}</Label>
               <Input
                 id="flag-rollout"
                 value={rolloutPct}
                 onChange={(e) => setRolloutPct(e.target.value)}
-                placeholder="optional"
+                placeholder={t("platformFeatureFlagsRolloutPlaceholder")}
                 className="h-8 w-28"
               />
             </div>
             <Button size="sm" onClick={create}>
-              Add flag
+              {t("platformFeatureFlagsAddButton")}
             </Button>
           </div>
         </CardContent>
@@ -82,10 +84,10 @@ export default function FeatureFlagsPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Key</TableHead>
-            <TableHead>Default</TableHead>
-            <TableHead>Rollout %</TableHead>
-            <TableHead>Per-org overrides</TableHead>
+            <TableHead>{t("platformFeatureFlagsKeyLabel")}</TableHead>
+            <TableHead>{t("platformFeatureFlagsColDefault")}</TableHead>
+            <TableHead>{t("platformFeatureFlagsRolloutLabel")}</TableHead>
+            <TableHead>{t("platformFeatureFlagsColOverrides")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -101,20 +103,20 @@ export default function FeatureFlagsPage() {
               <TableCell>
                 <button onClick={() => toggleDefault(flag.key, flag.default)}>
                   <Badge variant={flag.default ? "default" : "secondary"}>
-                    {flag.default ? "on" : "off"}
+                    {flag.default ? t("platformFeatureFlagsOn") : t("platformFeatureFlagsOff")}
                   </Badge>
                 </button>
               </TableCell>
               <TableCell className="font-dashboard-mono">{flag.rollout_pct ?? "-"}</TableCell>
               <TableCell className="font-dashboard-mono">
-                {Object.keys(flag.per_org_overrides).length} org(s)
+                {t("platformFeatureFlagsOrgCount", { count: Object.keys(flag.per_org_overrides).length })}
               </TableCell>
             </TableRow>
           ))}
           {!query.isLoading && (query.data ?? []).length === 0 && (
             <TableRow>
               <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                No feature flags yet.
+                {t("platformFeatureFlagsEmpty")}
               </TableCell>
             </TableRow>
           )}

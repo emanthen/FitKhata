@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { getPlatformMetrics } from "@fitkhata/api-client";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -11,6 +12,7 @@ import { StatTile } from "@/components/stat-tile";
 import { formatNpr } from "@/lib/money";
 
 export default function MetricsPage() {
+  const t = useTranslations("admin");
   const query = useQuery({ queryKey: ["platform", "metrics"], queryFn: getPlatformMetrics });
   const data = query.data;
   const byStatus = Object.entries(data?.by_status ?? {}).map(([status, count]) => ({
@@ -22,7 +24,7 @@ export default function MetricsPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <LineChartIcon size={18} strokeWidth={2} className="text-primary" />
-        Metrics
+        {t("platformMetricsTitle")}
       </h1>
       {query.isLoading ? (
         <Skeleton className="h-60 w-full rounded-xl" />
@@ -30,24 +32,26 @@ export default function MetricsPage() {
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <StatTile
-              label="MRR"
+              label={t("platformMetricsMrrLabel")}
               icon={<Banknote size={16} strokeWidth={2} />}
               value={formatNpr(data?.mrr_npr ?? "0", { symbol: true })}
             />
             <StatTile
-              label="Churn rate"
+              label={t("platformMetricsChurnLabel")}
               icon={<TrendingDown size={16} strokeWidth={2} />}
               value={`${data?.churn_rate_pct ?? 0}%`}
             />
             <StatTile
-              label="Trial conversion"
+              label={t("platformMetricsTrialConversionLabel")}
               icon={<TrendingUp size={16} strokeWidth={2} />}
               value={`${data?.trial_conversion_pct ?? 0}%`}
             />
           </div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Subscriptions by status</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">
+                {t("platformMetricsSubsByStatus")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>

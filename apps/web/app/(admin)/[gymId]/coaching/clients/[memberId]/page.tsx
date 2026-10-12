@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   getClientProgress,
@@ -31,12 +32,10 @@ function ProgressBar({ label, pct }: { label: string; pct: number }) {
   );
 }
 
-function WeightTrendChart({ measurements }: { measurements: BodyMeasurement[] }) {
+function WeightTrendChart({ measurements, emptyLabel }: { measurements: BodyMeasurement[]; emptyLabel: string }) {
   const points = [...measurements].reverse(); // oldest -> newest, left to right
   if (points.length < 2) {
-    return (
-      <p className="text-sm text-muted-foreground">Not enough measurements yet for a trend chart.</p>
-    );
+    return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
   }
   const weights = points.map((m) => Number(m.weight_kg));
   const min = Math.min(...weights);
@@ -59,6 +58,7 @@ function WeightTrendChart({ measurements }: { measurements: BodyMeasurement[] })
 
 export default function ClientCoachingProfilePage() {
   const { memberId } = useParams<{ memberId: string }>();
+  const t = useTranslations("admin");
 
   const profiles = useQuery({ queryKey: ["coaching", "client-profiles"], queryFn: listClientProfiles });
   const profileList = Array.isArray(profiles.data) ? profiles.data : profiles.data?.results ?? [];
@@ -96,7 +96,7 @@ export default function ClientCoachingProfilePage() {
     return (
       <p className="flex items-center gap-1.5 text-sm text-destructive">
         <TriangleAlert size={14} strokeWidth={2} />
-        This member has no coaching profile yet.
+        {t("coachingClientNoProfile")}
       </p>
     );
   }
@@ -106,16 +106,16 @@ export default function ClientCoachingProfilePage() {
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{profile.member_name}</h1>
         <p className="font-dashboard-mono mt-0.5 text-sm text-muted-foreground">
-          Goal: {profile.primary_goal.replace("_", " ")} &middot; {profile.starting_weight_kg}kg &rarr;{" "}
-          {profile.target_weight_kg}kg
+          {t("coachingClientGoalPrefix")} {profile.primary_goal.replace("_", " ")} &middot;{" "}
+          {profile.starting_weight_kg}kg &rarr; {profile.target_weight_kg}kg
         </p>
       </div>
 
       {progress.data && (
         <Card>
           <CardContent className="space-y-3">
-            <ProgressBar label="Goal progress" pct={progress.data.goal_progress_pct} />
-            <ProgressBar label="Attendance (last 4 weeks)" pct={progress.data.attendance_pct} />
+            <ProgressBar label={t("coachingClientGoalProgress")} pct={progress.data.goal_progress_pct} />
+            <ProgressBar label={t("coachingClientAttendance4w")} pct={progress.data.attendance_pct} />
           </CardContent>
         </Card>
       )}
@@ -124,11 +124,14 @@ export default function ClientCoachingProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
             <LineChart size={15} strokeWidth={2} />
-            Weight trend
+            {t("coachingClientWeightTrend")}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <WeightTrendChart measurements={measurementList} />
+          <WeightTrendChart
+            measurements={measurementList}
+            emptyLabel={t("coachingClientNotEnoughMeasurements")}
+          />
         </CardContent>
       </Card>
 
@@ -136,7 +139,7 @@ export default function ClientCoachingProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
             <Dumbbell size={15} strokeWidth={2} />
-            Recent workout logs
+            {t("coachingClientRecentLogs")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -147,12 +150,12 @@ export default function ClientCoachingProfilePage() {
                   {log.logged_on} &middot; {log.exercise_name_en}
                 </span>
                 <span className="font-dashboard-mono text-muted-foreground">
-                  {log.sets.length} set(s)
+                  {t("coachingClientSetsCount", { count: log.sets.length })}
                 </span>
               </li>
             ))}
             {logList.length === 0 && (
-              <li className="py-2 text-muted-foreground">No workout logs yet.</li>
+              <li className="py-2 text-muted-foreground">{t("coachingClientNoLogs")}</li>
             )}
           </ul>
         </CardContent>
@@ -160,7 +163,7 @@ export default function ClientCoachingProfilePage() {
 
       {profile.coach_notes && (
         <section className="space-y-1">
-          <h2 className="text-sm font-medium text-muted-foreground">Coach notes</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">{t("coachingClientCoachNotes")}</h2>
           <p className="text-sm text-foreground/80">{profile.coach_notes}</p>
         </section>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createProduct,
@@ -34,6 +35,7 @@ interface BasketLine {
 }
 
 export default function PosPage() {
+  const t = useTranslations("admin");
   const { claims } = useAuth();
   const canManageProducts = claims?.role === "owner" || claims?.role === "manager";
   const queryClient = useQueryClient();
@@ -62,7 +64,7 @@ export default function PosPage() {
       setStock("");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch {
-      setProductError("Couldn't add this product — check the SKU isn't already used.");
+      setProductError(t("billingPosProductError"));
     }
   }
 
@@ -129,7 +131,7 @@ export default function PosPage() {
       setMemberQuery("");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch {
-      setSaleError("Couldn't complete this sale — check stock levels.");
+      setSaleError(t("billingPosSaleError"));
     } finally {
       setRingingUp(false);
     }
@@ -139,23 +141,23 @@ export default function PosPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <ShoppingCart size={18} strokeWidth={2} className="text-primary" />
-        Point of sale
+        {t("billingPosTitle")}
       </h1>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Ring up a sale</CardTitle>
+            <CardTitle>{t("billingPosRingUpTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {lastSaleTotal && (
               <p className="rounded-md bg-primary/10 px-2.5 py-2 text-sm text-primary">
-                Sale complete — {formatNpr(lastSaleTotal, { symbol: true })} invoiced.
+                {t("billingPosSaleComplete", { amount: formatNpr(lastSaleTotal, { symbol: true }) })}
               </p>
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="member-search">Member</Label>
+              <Label htmlFor="member-search">{t("billingPosMemberLabel")}</Label>
               {selectedMember ? (
                 <div className="flex items-center justify-between rounded-md border px-2.5 py-1.5 text-sm">
                   <span>
@@ -167,7 +169,7 @@ export default function PosPage() {
                     className="h-6 text-xs"
                     onClick={() => setSelectedMember(null)}
                   >
-                    Change
+                    {t("billingPosChangeButton")}
                   </Button>
                 </div>
               ) : (
@@ -176,7 +178,7 @@ export default function PosPage() {
                     id="member-search"
                     value={memberQuery}
                     onChange={(e) => setMemberQuery(e.target.value)}
-                    placeholder="Search by name, phone, or member code"
+                    placeholder={t("billingPosMemberSearchPlaceholder")}
                     className="h-8"
                   />
                   {memberMatches.length > 0 && (
@@ -203,7 +205,7 @@ export default function PosPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Products</Label>
+              <Label>{t("billingPosProductsLabel")}</Label>
               <div className="flex flex-wrap gap-1.5">
                 {activeProducts.map((p) => (
                   <Button
@@ -218,7 +220,7 @@ export default function PosPage() {
                   </Button>
                 ))}
                 {activeProducts.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No products set up yet.</p>
+                  <p className="text-sm text-muted-foreground">{t("billingPosNoProductsSetUp")}</p>
                 )}
               </div>
             </div>
@@ -251,14 +253,14 @@ export default function PosPage() {
             {saleError && <p className="text-sm text-destructive">{saleError}</p>}
             <div className="flex items-center justify-between border-t pt-3">
               <span className="text-sm font-medium">
-                Total: {formatNpr(basketTotal.toFixed(2), { symbol: true })}
+                {t("billingPosTotal", { amount: formatNpr(basketTotal.toFixed(2), { symbol: true }) })}
               </span>
               <Button
                 size="sm"
                 disabled={!selectedMember || basket.length === 0 || ringingUp}
                 onClick={submitSale}
               >
-                {ringingUp ? "..." : "Complete sale"}
+                {ringingUp ? "..." : t("billingPosCompleteSaleButton")}
               </Button>
             </div>
           </CardContent>
@@ -266,16 +268,16 @@ export default function PosPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Products &amp; stock</CardTitle>
+            <CardTitle>{t("billingPosProductsStockTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Stock</TableHead>
+                  <TableHead>{t("billingPosSkuColumn")}</TableHead>
+                  <TableHead>{t("billingPosNameColumn")}</TableHead>
+                  <TableHead>{t("billingPosPriceColumn")}</TableHead>
+                  <TableHead>{t("billingPosStockColumn")}</TableHead>
                   {canManageProducts && <TableHead />}
                 </TableRow>
               </TableHeader>
@@ -308,7 +310,7 @@ export default function PosPage() {
                       colSpan={canManageProducts ? 5 : 4}
                       className="py-6 text-center text-sm text-muted-foreground"
                     >
-                      No products yet.
+                      {t("billingPosNoProductsYet")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -319,7 +321,7 @@ export default function PosPage() {
               <form onSubmit={addProduct} className="space-y-3 border-t pt-3">
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="product-sku">SKU</Label>
+                    <Label htmlFor="product-sku">{t("billingPosSkuColumn")}</Label>
                     <Input
                       id="product-sku"
                       value={sku}
@@ -329,7 +331,7 @@ export default function PosPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="product-name">Name</Label>
+                    <Label htmlFor="product-name">{t("billingPosNameColumn")}</Label>
                     <Input
                       id="product-name"
                       value={name}
@@ -339,7 +341,7 @@ export default function PosPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="product-price">Price (NPR)</Label>
+                    <Label htmlFor="product-price">{t("billingPosPriceNprLabel")}</Label>
                     <Input
                       id="product-price"
                       type="number"
@@ -351,7 +353,7 @@ export default function PosPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="product-stock">Stock</Label>
+                    <Label htmlFor="product-stock">{t("billingPosStockColumn")}</Label>
                     <Input
                       id="product-stock"
                       type="number"
@@ -363,7 +365,7 @@ export default function PosPage() {
                   </div>
                   <Button type="submit" size="sm">
                     <Plus size={13} strokeWidth={2} data-icon="inline-start" />
-                    Add product
+                    {t("billingPosAddProductButton")}
                   </Button>
                 </div>
                 {productError && <p className="text-sm text-destructive">{productError}</p>}

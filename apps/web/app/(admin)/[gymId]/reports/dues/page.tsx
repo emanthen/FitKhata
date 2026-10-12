@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchDuesAgeingExport, getDuesAgeing } from "@fitkhata/api-client";
 import { ChartColumn, Download } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,28 +24,29 @@ async function downloadExport(format: "csv" | "xlsx") {
 }
 
 export default function DuesAgeingPage() {
+  const t = useTranslations("admin");
   const query = useQuery({ queryKey: ["reports", "dues-ageing"], queryFn: getDuesAgeing });
 
   return (
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <ChartColumn size={18} strokeWidth={2} className="text-primary" />
-        Reports
+        {t("reportsHeading")}
       </h1>
       <ReportsTabs />
 
       <Card>
         <CardContent>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium text-muted-foreground">Dues ageing</h2>
+            <h2 className="text-sm font-medium text-muted-foreground">{t("reportsDuesTitle")}</h2>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => downloadExport("csv")}>
                 <Download size={13} strokeWidth={2} data-icon="inline-start" />
-                CSV
+                {t("reportsCsv")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => downloadExport("xlsx")}>
                 <Download size={13} strokeWidth={2} data-icon="inline-start" />
-                XLSX
+                {t("reportsXlsx")}
               </Button>
             </div>
           </div>
@@ -55,9 +57,9 @@ export default function DuesAgeingPage() {
             <table className="w-full max-w-md text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-1.5">Age bucket</th>
-                  <th className="py-1.5 text-right">Invoices</th>
-                  <th className="py-1.5 text-right">Total due</th>
+                  <th className="py-1.5">{t("reportsDuesAgeBucket")}</th>
+                  <th className="py-1.5 text-right">{t("reportsDuesInvoices")}</th>
+                  <th className="py-1.5 text-right">{t("reportsDuesTotalDue")}</th>
                 </tr>
               </thead>
               <tbody className="font-dashboard-mono">

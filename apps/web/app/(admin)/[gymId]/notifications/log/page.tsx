@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   getMonthlyNotificationCost,
@@ -30,7 +31,21 @@ import { Badge } from "@/components/ui/badge";
 import { formatNpr } from "@/lib/money";
 
 const STATUS_FILTERS = ["all", "queued", "sent", "delivered", "failed"] as const;
+const STATUS_LABEL_KEYS: Record<(typeof STATUS_FILTERS)[number], string> = {
+  all: "notifStatusAll",
+  queued: "notifStatusQueued",
+  sent: "notifStatusSent",
+  delivered: "notifStatusDelivered",
+  failed: "notifStatusFailed",
+};
 const CHANNEL_FILTERS: ("all" | NotificationChannel)[] = ["all", "sms", "whatsapp", "push", "email"];
+const CHANNEL_LABEL_KEYS: Record<"all" | NotificationChannel, string> = {
+  all: "notifChannelAll",
+  sms: "notifChannelSms",
+  whatsapp: "notifChannelWhatsapp",
+  push: "notifChannelPush",
+  email: "notifChannelEmail",
+};
 
 function unwrap(data: NotificationLogEntry[] | Page<NotificationLogEntry> | undefined): NotificationLogEntry[] {
   if (!data) return [];
@@ -38,6 +53,7 @@ function unwrap(data: NotificationLogEntry[] | Page<NotificationLogEntry> | unde
 }
 
 export default function NotificationLogPage() {
+  const t = useTranslations("admin");
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("all");
   const [channel, setChannel] = useState<"all" | NotificationChannel>("all");
 
@@ -61,11 +77,11 @@ export default function NotificationLogPage() {
       <div className="flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <BellRing size={18} strokeWidth={2} className="text-primary" />
-          Delivery log
+          {t("settingsDeliveryLog")}
         </h1>
         {monthlyCost.data && (
           <p className="font-dashboard-mono text-sm text-muted-foreground">
-            This month: {formatNpr(monthlyCost.data.cost_npr, { symbol: true })}
+            {t("notifLogThisMonth", { cost: formatNpr(monthlyCost.data.cost_npr, { symbol: true }) })}
           </p>
         )}
       </div>
@@ -78,7 +94,7 @@ export default function NotificationLogPage() {
           <SelectContent>
             {STATUS_FILTERS.map((s) => (
               <SelectItem key={s} value={s}>
-                {s}
+                {t(STATUS_LABEL_KEYS[s])}
               </SelectItem>
             ))}
           </SelectContent>
@@ -90,7 +106,7 @@ export default function NotificationLogPage() {
           <SelectContent>
             {CHANNEL_FILTERS.map((c) => (
               <SelectItem key={c} value={c}>
-                {c}
+                {t(CHANNEL_LABEL_KEYS[c])}
               </SelectItem>
             ))}
           </SelectContent>
@@ -100,23 +116,23 @@ export default function NotificationLogPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Member</TableHead>
-            <TableHead>Event</TableHead>
-            <TableHead>Channel</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Cost</TableHead>
-            <TableHead>When</TableHead>
+            <TableHead>{t("notifLogColMember")}</TableHead>
+            <TableHead>{t("notifLogColEvent")}</TableHead>
+            <TableHead>{t("notifChannelLabel")}</TableHead>
+            <TableHead>{t("notifLogColStatus")}</TableHead>
+            <TableHead>{t("notifLogColCost")}</TableHead>
+            <TableHead>{t("notifLogColWhen")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((n) => (
             <TableRow key={n.id}>
               <TableCell>{n.member_name}</TableCell>
-              <TableCell>{n.template_key || "broadcast"}</TableCell>
-              <TableCell className="capitalize">{n.channel}</TableCell>
+              <TableCell>{n.template_key || t("notifLogBroadcastFallback")}</TableCell>
+              <TableCell className="capitalize">{t(CHANNEL_LABEL_KEYS[n.channel])}</TableCell>
               <TableCell>
                 <Badge variant={n.status === "failed" ? "destructive" : "secondary"}>
-                  {n.status}
+                  {t(STATUS_LABEL_KEYS[n.status as (typeof STATUS_FILTERS)[number]])}
                 </Badge>
               </TableCell>
               <TableCell className="font-dashboard-mono">
@@ -130,7 +146,7 @@ export default function NotificationLogPage() {
           {rows.length === 0 && (
             <TableRow>
               <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                No notifications match these filters.
+                {t("notifLogEmptyState")}
               </TableCell>
             </TableRow>
           )}

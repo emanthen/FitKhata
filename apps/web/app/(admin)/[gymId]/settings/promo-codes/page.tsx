@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPromoCode, listPromoCodes } from "@fitkhata/api-client";
 import { Tag } from "lucide-react";
@@ -19,6 +20,7 @@ import {
 import { formatNpr } from "@/lib/money";
 
 export default function PromoCodesSettingsPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const promoCodes = useQuery({ queryKey: ["promo-codes"], queryFn: listPromoCodes });
 
@@ -48,19 +50,19 @@ export default function PromoCodesSettingsPage() {
       setValidTo("");
       queryClient.invalidateQueries({ queryKey: ["promo-codes"] });
     } catch {
-      setError("Couldn't create the promo code — check the details.");
+      setError(t("billingPromoCreateError"));
     }
   }
 
   return (
     <div className="max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold tracking-tight">Promo codes</h1>
+      <h1 className="text-xl font-semibold tracking-tight">{t("settingsPromoCodes")}</h1>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Tag size={16} strokeWidth={2} className="text-primary" />
-            Active codes
+            {t("billingPromoActiveCodesTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -69,21 +71,23 @@ export default function PromoCodesSettingsPage() {
               <li key={p.id} className="flex items-center justify-between py-2 text-sm">
                 <span className="font-dashboard-mono">{p.code}</span>
                 <span className="text-muted-foreground">
-                  {p.kind === "flat" ? `${formatNpr(p.value, { symbol: true })} off` : `${p.value}% off`}{" "}
-                  &middot; used {p.times_used}
+                  {p.kind === "flat"
+                    ? t("billingPromoOffFlat", { amount: formatNpr(p.value, { symbol: true }) })
+                    : t("billingPromoOffPercent", { percent: p.value })}{" "}
+                  &middot; {t("billingPromoUsedCount", { count: p.times_used })}
                   {p.usage_limit ? `/${p.usage_limit}` : ""}
                 </span>
               </li>
             ))}
             {promoCodes.data?.length === 0 && (
-              <li className="py-2 text-sm text-muted-foreground">No promo codes yet.</li>
+              <li className="py-2 text-sm text-muted-foreground">{t("billingPromoEmptyState")}</li>
             )}
           </ul>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <form onSubmit={submit} className="flex flex-wrap items-end gap-2 border-t pt-3">
             <div className="space-y-1.5">
-              <Label htmlFor="promo-code">Code</Label>
+              <Label htmlFor="promo-code">{t("billingPromoCodeLabel")}</Label>
               <Input
                 id="promo-code"
                 value={code}
@@ -93,19 +97,19 @@ export default function PromoCodesSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="promo-kind">Kind</Label>
+              <Label htmlFor="promo-kind">{t("billingAddonKindLabel")}</Label>
               <Select value={kind} onValueChange={(v) => setKind(v as "flat" | "percent")}>
                 <SelectTrigger id="promo-kind" className="h-8 w-36 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="flat">Flat (NPR)</SelectItem>
-                  <SelectItem value="percent">Percent</SelectItem>
+                  <SelectItem value="flat">{t("billingPromoKindFlat")}</SelectItem>
+                  <SelectItem value="percent">{t("billingPromoKindPercent")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="promo-value">Value</Label>
+              <Label htmlFor="promo-value">{t("billingPromoValueLabel")}</Label>
               <Input
                 id="promo-value"
                 type="number"
@@ -117,7 +121,7 @@ export default function PromoCodesSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="promo-from">Valid from</Label>
+              <Label htmlFor="promo-from">{t("billingPromoValidFromLabel")}</Label>
               <Input
                 id="promo-from"
                 type="date"
@@ -128,7 +132,7 @@ export default function PromoCodesSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="promo-to">Valid to</Label>
+              <Label htmlFor="promo-to">{t("billingPromoValidToLabel")}</Label>
               <Input
                 id="promo-to"
                 type="date"
@@ -139,7 +143,7 @@ export default function PromoCodesSettingsPage() {
               />
             </div>
             <Button type="submit" size="sm">
-              Add promo code
+              {t("billingAddPromoCodeButton")}
             </Button>
           </form>
         </CardContent>

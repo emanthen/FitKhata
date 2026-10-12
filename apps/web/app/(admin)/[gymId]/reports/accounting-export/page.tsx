@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { fetchAccountingExport, type AccountingExportFormat } from "@fitkhata/api-client";
 import { ChartColumn, Download } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,7 @@ async function downloadExport(date: string, format: AccountingExportFormat) {
 }
 
 export default function AccountingExportPage() {
+  const t = useTranslations("admin");
   const { claims } = useAuth();
   const isOwner = claims?.role === "owner";
   const [date, setDate] = useState("");
@@ -42,7 +44,7 @@ export default function AccountingExportPage() {
     try {
       await downloadExport(date, format);
     } catch {
-      setError("Couldn't generate the export for that date.");
+      setError(t("reportsAccountingError"));
     } finally {
       setDownloading(false);
     }
@@ -52,25 +54,23 @@ export default function AccountingExportPage() {
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <ChartColumn size={18} strokeWidth={2} className="text-primary" />
-        Reports
+        {t("reportsHeading")}
       </h1>
       <ReportsTabs />
 
       {!isOwner ? (
         <p className="text-sm text-muted-foreground">
-          Only an owner can export the daily accounting journal.
+          {t("reportsAccountingOwnerOnly")}
         </p>
       ) : (
         <Card>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              One debit + credit row per payment collected on the chosen day, mapped to the
-              column layout Tally or Swastik expects for voucher import — cash/bank/wallet
-              clearing against Sales and VAT Payable.
+              {t("reportsAccountingDescription")}
             </p>
             <div className="flex flex-wrap items-end gap-2">
               <div className="space-y-1.5">
-                <Label htmlFor="export-date">Date</Label>
+                <Label htmlFor="export-date">{t("reportsAccountingDateLabel")}</Label>
                 <Input
                   id="export-date"
                   type="date"
@@ -80,7 +80,7 @@ export default function AccountingExportPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="export-format">Format</Label>
+                <Label htmlFor="export-format">{t("reportsAccountingFormatLabel")}</Label>
                 <Select
                   value={format}
                   onValueChange={(v) => setFormat(v as AccountingExportFormat)}
@@ -101,7 +101,7 @@ export default function AccountingExportPage() {
                 disabled={!date || downloading}
               >
                 <Download size={13} strokeWidth={2} data-icon="inline-start" />
-                {downloading ? "..." : "Download CSV"}
+                {downloading ? "..." : t("reportsAccountingDownloadCsv")}
               </Button>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { listMembers, type Member, type Page } from "@fitkhata/api-client";
 import { Search, UserPlus, UserRoundX, Upload } from "lucide-react";
@@ -37,8 +38,23 @@ function useDebounced<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
+const STATUS_KEY: Record<string, string> = {
+  active: "membersStatusActive",
+  expired: "membersStatusExpired",
+  frozen: "membersStatusFrozen",
+  cancelled: "membersStatusCancelled",
+  trial: "membersStatusTrial",
+};
+
+const RISK_KEY: Record<string, string> = {
+  normal: "membersRiskNormal",
+  warning: "membersRiskWarning",
+  red_list: "membersRiskRedList",
+};
+
 export default function MembersPage() {
   const { gymId } = useParams<{ gymId: string }>();
+  const t = useTranslations("admin");
   const searchParams = useSearchParams();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("");
@@ -76,17 +92,17 @@ export default function MembersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">Members</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("membersListTitle")}</h1>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
             <Link href={`/${gymId}/members/import`}>
               <Upload size={15} strokeWidth={2} data-icon="inline-start" />
-              Import
+              {t("membersImportAction")}
             </Link>
           </Button>
           <Button onClick={() => setDrawerOpen(true)}>
             <UserPlus size={15} strokeWidth={2} data-icon="inline-start" />
-            Register member
+            {t("membersRegisterAction")}
           </Button>
         </div>
       </div>
@@ -99,7 +115,7 @@ export default function MembersPage() {
             className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
           />
           <Input
-            placeholder="Search by name, phone, or member code..."
+            placeholder={t("membersSearchPlaceholder")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="pl-8"
@@ -107,15 +123,15 @@ export default function MembersPage() {
         </div>
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("membersStatusFilterLabel")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
-            <SelectItem value="frozen">Frozen</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="trial">Trial</SelectItem>
+            <SelectItem value="all">{t("membersStatusFilterAll")}</SelectItem>
+            <SelectItem value="active">{t("membersStatusActive")}</SelectItem>
+            <SelectItem value="expired">{t("membersStatusExpired")}</SelectItem>
+            <SelectItem value="frozen">{t("membersStatusFrozen")}</SelectItem>
+            <SelectItem value="cancelled">{t("membersStatusCancelled")}</SelectItem>
+            <SelectItem value="trial">{t("membersStatusTrial")}</SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -123,13 +139,13 @@ export default function MembersPage() {
           onValueChange={(v) => setRiskState(v === "all" ? "" : v)}
         >
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Risk" />
+            <SelectValue placeholder={t("membersRiskFilterLabel")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All risk states</SelectItem>
-            <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="warning">Warning</SelectItem>
-            <SelectItem value="red_list">Red list</SelectItem>
+            <SelectItem value="all">{t("membersRiskFilterAll")}</SelectItem>
+            <SelectItem value="normal">{t("membersRiskNormal")}</SelectItem>
+            <SelectItem value="warning">{t("membersRiskWarning")}</SelectItem>
+            <SelectItem value="red_list">{t("membersRiskRedList")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -137,11 +153,11 @@ export default function MembersPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Code</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Risk</TableHead>
+            <TableHead>{t("membersColCode")}</TableHead>
+            <TableHead>{t("membersColName")}</TableHead>
+            <TableHead>{t("membersColPhone")}</TableHead>
+            <TableHead>{t("membersColStatus")}</TableHead>
+            <TableHead>{t("membersColRisk")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -163,12 +179,12 @@ export default function MembersPage() {
               </TableCell>
               <TableCell className="font-dashboard-mono text-sm">{m.phone}</TableCell>
               <TableCell>
-                <Badge variant="secondary">{m.status}</Badge>
+                <Badge variant="secondary">{t(STATUS_KEY[m.status] ?? "membersStatusActive")}</Badge>
               </TableCell>
               <TableCell>
                 {m.risk_state !== "normal" && (
                   <Badge variant={m.risk_state === "red_list" ? "destructive" : "secondary"}>
-                    {m.risk_state}
+                    {t(RISK_KEY[m.risk_state] ?? "membersRiskNormal")}
                   </Badge>
                 )}
               </TableCell>
@@ -179,7 +195,7 @@ export default function MembersPage() {
               <TableCell colSpan={5} className="py-12 text-center">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <UserRoundX size={22} strokeWidth={1.75} />
-                  <p className="text-sm">No members found.</p>
+                  <p className="text-sm">{t("membersEmptyState")}</p>
                 </div>
               </TableCell>
             </TableRow>
@@ -193,7 +209,7 @@ export default function MembersPage() {
           onClick={() => browseQuery.fetchNextPage()}
           disabled={browseQuery.isFetchingNextPage}
         >
-          {browseQuery.isFetchingNextPage ? "Loading..." : "Load more"}
+          {browseQuery.isFetchingNextPage ? t("membersLoading") : t("membersLoadMore")}
         </Button>
       )}
 

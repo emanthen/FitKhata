@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createAddOn, createPlan, listAddOns, listPlans } from "@fitkhata/api-client";
 import { PackagePlus, Ticket } from "lucide-react";
@@ -19,6 +20,7 @@ import {
 import { formatNpr } from "@/lib/money";
 
 export default function PlansSettingsPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const plans = useQuery({ queryKey: ["plans"], queryFn: listPlans });
   const addons = useQuery({ queryKey: ["addons"], queryFn: listAddOns });
@@ -52,7 +54,7 @@ export default function PlansSettingsPage() {
       setPlanPrice("");
       queryClient.invalidateQueries({ queryKey: ["plans"] });
     } catch {
-      setPlanError("Couldn't create the plan — check the details.");
+      setPlanError(t("billingPlanCreateError"));
     }
   }
 
@@ -69,19 +71,19 @@ export default function PlansSettingsPage() {
       setAddonPrice("");
       queryClient.invalidateQueries({ queryKey: ["addons"] });
     } catch {
-      setAddonError("Couldn't create the add-on — check the details.");
+      setAddonError(t("billingAddonCreateError"));
     }
   }
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl font-semibold tracking-tight">Plans &amp; add-ons</h1>
+      <h1 className="text-xl font-semibold tracking-tight">{t("settingsPlansAddons")}</h1>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Ticket size={16} strokeWidth={2} className="text-primary" />
-            Membership plans
+            {t("billingMembershipPlansTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -95,13 +97,13 @@ export default function PlansSettingsPage() {
               </li>
             ))}
             {plans.data?.length === 0 && (
-              <li className="py-2 text-sm text-muted-foreground">No plans yet.</li>
+              <li className="py-2 text-sm text-muted-foreground">{t("billingPlansEmptyState")}</li>
             )}
           </ul>
           {planError && <p className="text-sm text-destructive">{planError}</p>}
           <form onSubmit={submitPlan} className="flex flex-wrap items-end gap-2 border-t pt-3">
             <div className="space-y-1.5">
-              <Label htmlFor="plan-name">Name</Label>
+              <Label htmlFor="plan-name">{t("billingPlanNameLabel")}</Label>
               <Input
                 id="plan-name"
                 value={planName}
@@ -111,7 +113,7 @@ export default function PlansSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="plan-days">Duration (days)</Label>
+              <Label htmlFor="plan-days">{t("billingPlanDurationDaysLabel")}</Label>
               <Input
                 id="plan-days"
                 type="number"
@@ -122,7 +124,7 @@ export default function PlansSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="plan-price">Price (NPR)</Label>
+              <Label htmlFor="plan-price">{t("billingPosPriceNprLabel")}</Label>
               <Input
                 id="plan-price"
                 type="number"
@@ -134,7 +136,7 @@ export default function PlansSettingsPage() {
               />
             </div>
             <Button type="submit" size="sm">
-              Add plan
+              {t("billingAddPlanButton")}
             </Button>
           </form>
         </CardContent>
@@ -144,7 +146,7 @@ export default function PlansSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PackagePlus size={16} strokeWidth={2} className="text-primary" />
-            Add-ons
+            {t("billingAddonsTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -160,13 +162,13 @@ export default function PlansSettingsPage() {
               </li>
             ))}
             {addons.data?.length === 0 && (
-              <li className="py-2 text-sm text-muted-foreground">No add-ons yet.</li>
+              <li className="py-2 text-sm text-muted-foreground">{t("billingAddonsEmptyState")}</li>
             )}
           </ul>
           {addonError && <p className="text-sm text-destructive">{addonError}</p>}
           <form onSubmit={submitAddon} className="flex flex-wrap items-end gap-2 border-t pt-3">
             <div className="space-y-1.5">
-              <Label htmlFor="addon-name">Name</Label>
+              <Label htmlFor="addon-name">{t("billingPlanNameLabel")}</Label>
               <Input
                 id="addon-name"
                 value={addonName}
@@ -176,7 +178,7 @@ export default function PlansSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="addon-price">Price (NPR)</Label>
+              <Label htmlFor="addon-price">{t("billingPosPriceNprLabel")}</Label>
               <Input
                 id="addon-price"
                 type="number"
@@ -188,21 +190,21 @@ export default function PlansSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="addon-kind">Kind</Label>
+              <Label htmlFor="addon-kind">{t("billingAddonKindLabel")}</Label>
               <Select value={addonKind} onValueChange={setAddonKind}>
                 <SelectTrigger id="addon-kind" className="h-8 w-40 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="locker">Locker</SelectItem>
-                  <SelectItem value="towel">Towel</SelectItem>
-                  <SelectItem value="pt">Personal training</SelectItem>
-                  <SelectItem value="diet">Diet plan</SelectItem>
+                  <SelectItem value="locker">{t("billingAddonKindLocker")}</SelectItem>
+                  <SelectItem value="towel">{t("billingAddonKindTowel")}</SelectItem>
+                  <SelectItem value="pt">{t("billingAddonKindPt")}</SelectItem>
+                  <SelectItem value="diet">{t("billingAddonKindDiet")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <Button type="submit" size="sm">
-              Add add-on
+              {t("billingAddAddonButton")}
             </Button>
           </form>
         </CardContent>

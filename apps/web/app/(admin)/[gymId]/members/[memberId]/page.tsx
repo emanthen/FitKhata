@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   approveCreditNote,
@@ -39,12 +40,39 @@ import { getBridgePrintConfig, printReceiptViaBridge } from "@/lib/bridge-print"
 import { useAuth } from "@/lib/auth";
 import { formatNpr } from "@/lib/money";
 
-const DESK_PAYMENT_MODES: { value: PaymentMode; label: string }[] = [
-  { value: "cash", label: "Cash" },
-  { value: "manual_esewa", label: "Manual eSewa" },
-  { value: "bank", label: "Bank transfer" },
-  { value: "cheque", label: "Cheque" },
+const DESK_PAYMENT_MODES: { value: PaymentMode; labelKey: string }[] = [
+  { value: "cash", labelKey: "membersPaymentModeCash" },
+  { value: "manual_esewa", labelKey: "membersPaymentModeManualEsewa" },
+  { value: "bank", labelKey: "membersPaymentModeBank" },
+  { value: "cheque", labelKey: "membersPaymentModeCheque" },
 ];
+
+const STATUS_KEY: Record<string, string> = {
+  active: "membersStatusActive",
+  expired: "membersStatusExpired",
+  frozen: "membersStatusFrozen",
+  cancelled: "membersStatusCancelled",
+  trial: "membersStatusTrial",
+};
+
+const RISK_KEY: Record<string, string> = {
+  normal: "membersRiskNormal",
+  warning: "membersRiskWarning",
+  red_list: "membersRiskRedList",
+};
+
+const MEMBERSHIP_STATUS_KEY: Record<string, string> = {
+  active: "membersMembershipStatusActive",
+  expired: "membersMembershipStatusExpired",
+  paused: "membersMembershipStatusPaused",
+  cancelled: "membersMembershipStatusCancelled",
+};
+
+const INVOICE_STATUS_KEY: Record<string, string> = {
+  draft: "membersInvoiceStatusDraft",
+  issued: "membersInvoiceStatusIssued",
+  void: "membersInvoiceStatusVoid",
+};
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -53,6 +81,7 @@ function initials(name: string): string {
 
 export default function MemberProfilePage() {
   const { memberId } = useParams<{ memberId: string }>();
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const { claims } = useAuth();
   const isOwner = claims?.role === "owner";
@@ -135,7 +164,7 @@ export default function MemberProfilePage() {
         totalNpr: formatNpr(inv.total_npr, { symbol: true }),
       });
     } catch (err) {
-      setPrintError(err instanceof Error ? err.message : "Print failed.");
+      setPrintError(err instanceof Error ? err.message : t("membersPrintFailed"));
     } finally {
       setPrintingId(null);
     }
@@ -158,10 +187,10 @@ export default function MemberProfilePage() {
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        <Badge variant="secondary">{m.status}</Badge>
+        <Badge variant="secondary">{t(STATUS_KEY[m.status] ?? "membersStatusActive")}</Badge>
         {m.risk_state !== "normal" && (
           <Badge variant={m.risk_state === "red_list" ? "destructive" : "secondary"}>
-            {m.risk_state}
+            {t(RISK_KEY[m.risk_state] ?? "membersRiskNormal")}
           </Badge>
         )}
         {m.tags.map((tag) => (
@@ -173,7 +202,7 @@ export default function MemberProfilePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Memberships</CardTitle>
+          <CardTitle>{t("membersMembershipsTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="divide-y">
@@ -182,11 +211,13 @@ export default function MemberProfilePage() {
                 <span className="font-dashboard-mono">
                   {ms.start_date} &rarr; {ms.expiry_date}
                 </span>
-                <Badge variant="secondary">{ms.status}</Badge>
+                <Badge variant="secondary">
+                  {t(MEMBERSHIP_STATUS_KEY[ms.status] ?? "membersMembershipStatusActive")}
+                </Badge>
               </li>
             ))}
             {membershipList.length === 0 && (
-              <li className="py-2.5 text-sm text-muted-foreground">No memberships yet.</li>
+              <li className="py-2.5 text-sm text-muted-foreground">{t("membersNoMemberships")}</li>
             )}
           </ul>
         </CardContent>
@@ -194,7 +225,7 @@ export default function MemberProfilePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Invoices &amp; dues</CardTitle>
+          <CardTitle>{t("membersInvoicesTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           {printError && <p className="mb-2 text-sm text-destructive">{printError}</p>}
@@ -214,7 +245,7 @@ export default function MemberProfilePage() {
                     <span className="font-dashboard-mono text-sm font-medium">
                       {formatNpr(inv.total_npr, { symbol: true })}{" "}
                       <span className="font-sans font-normal text-muted-foreground">
-                        ({inv.status})
+                        ({t(INVOICE_STATUS_KEY[inv.status] ?? "membersInvoiceStatusDraft")})
                       </span>
                     </span>
                   </div>
@@ -227,7 +258,7 @@ export default function MemberProfilePage() {
                       onClick={() => openPdf(inv.id)}
                     >
                       <FileText size={13} strokeWidth={2} data-icon="inline-start" />
-                      PDF
+                      {t("membersPdfAction")}
                     </Button>
                     {bridgeReady && (
                       <Button
@@ -238,7 +269,7 @@ export default function MemberProfilePage() {
                         onClick={() => printToThermalPrinter(inv)}
                       >
                         <Printer size={13} strokeWidth={2} data-icon="inline-start" />
-                        {printingId === inv.id ? "Printing..." : "Print"}
+                        {printingId === inv.id ? t("membersPrinting") : t("membersPrintAction")}
                       </Button>
                     )}
                     <Button
@@ -248,7 +279,7 @@ export default function MemberProfilePage() {
                       onClick={() => sendReceiptSms(inv.id)}
                     >
                       <MessageSquareText size={13} strokeWidth={2} data-icon="inline-start" />
-                      SMS receipt
+                      {t("membersSmsReceiptAction")}
                     </Button>
                     {inv.status === "draft" && (
                       <Button
@@ -258,7 +289,7 @@ export default function MemberProfilePage() {
                         onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "pay" })}
                       >
                         <Wallet size={13} strokeWidth={2} data-icon="inline-start" />
-                        Collect payment
+                        {t("membersCollectPaymentAction")}
                       </Button>
                     )}
                     {inv.status === "issued" && (
@@ -269,7 +300,7 @@ export default function MemberProfilePage() {
                         onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "cn" })}
                       >
                         <Receipt size={13} strokeWidth={2} data-icon="inline-start" />
-                        Request credit note
+                        {t("membersRequestCreditNoteAction")}
                       </Button>
                     )}
                     {isOwner && inv.status !== "void" && (
@@ -280,7 +311,7 @@ export default function MemberProfilePage() {
                         onClick={() => setOpenPanel({ invoiceId: inv.id, kind: "void" })}
                       >
                         <X size={13} strokeWidth={2} data-icon="inline-start" />
-                        Void
+                        {t("membersVoidAction")}
                       </Button>
                     )}
                   </div>
@@ -334,7 +365,7 @@ export default function MemberProfilePage() {
                             }}
                           >
                             <Check size={12} strokeWidth={2} data-icon="inline-start" />
-                            Approve
+                            {t("membersApproveAction")}
                           </Button>
                         </li>
                       ))}
@@ -344,7 +375,7 @@ export default function MemberProfilePage() {
               );
             })}
             {invoiceList.length === 0 && (
-              <li className="py-2.5 text-sm text-muted-foreground">No invoices yet.</li>
+              <li className="py-2.5 text-sm text-muted-foreground">{t("membersNoInvoices")}</li>
             )}
           </ul>
         </CardContent>
@@ -364,6 +395,7 @@ function CollectPaymentForm({
   onDone: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("admin");
   const [mode, setMode] = useState<PaymentMode>("cash");
   const [amount, setAmount] = useState(defaultAmount);
   const [error, setError] = useState<string | null>(null);
@@ -381,7 +413,7 @@ function CollectPaymentForm({
       });
       onDone();
     } catch {
-      setError("Couldn't record this payment.");
+      setError(t("membersPaymentRecordError"));
       setSubmitting(false);
     }
   }
@@ -396,7 +428,7 @@ function CollectPaymentForm({
         <SelectContent>
           {DESK_PAYMENT_MODES.map((m) => (
             <SelectItem key={m.value} value={m.value}>
-              {m.label}
+              {t(m.labelKey)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -410,10 +442,10 @@ function CollectPaymentForm({
         required
       />
       <Button type="submit" size="sm" disabled={submitting}>
-        {submitting ? "..." : "Confirm"}
+        {submitting ? "..." : t("membersConfirmAction")}
       </Button>
       <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onCancel}>
-        Cancel
+        {t("membersCancelAction")}
       </Button>
     </form>
   );
@@ -428,6 +460,7 @@ function VoidForm({
   onDone: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("admin");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -440,7 +473,7 @@ function VoidForm({
       await voidInvoice(invoiceId, reason);
       onDone();
     } catch {
-      setError("Couldn't void this invoice.");
+      setError(t("membersVoidError"));
       setSubmitting(false);
     }
   }
@@ -449,17 +482,17 @@ function VoidForm({
     <form onSubmit={submit} className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2.5">
       {error && <p className="w-full text-xs text-destructive">{error}</p>}
       <Input
-        placeholder="Reason for voiding"
+        placeholder={t("membersVoidReasonPlaceholder")}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         className="h-8 flex-1 text-xs"
         required
       />
       <Button type="submit" size="sm" variant="destructive" disabled={submitting}>
-        {submitting ? "..." : "Void"}
+        {submitting ? "..." : t("membersVoidAction")}
       </Button>
       <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onCancel}>
-        Cancel
+        {t("membersCancelAction")}
       </Button>
     </form>
   );
@@ -474,6 +507,7 @@ function CreditNoteForm({
   onDone: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("admin");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -487,7 +521,7 @@ function CreditNoteForm({
       await createCreditNote({ invoice: invoiceId, amount_npr: amount, reason });
       onDone();
     } catch {
-      setError("Couldn't submit this credit note.");
+      setError(t("membersCreditNoteError"));
       setSubmitting(false);
     }
   }
@@ -498,24 +532,24 @@ function CreditNoteForm({
       <Input
         type="number"
         step="0.01"
-        placeholder="Amount"
+        placeholder={t("membersAmountPlaceholder")}
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         className="h-8 w-28 text-xs"
         required
       />
       <Input
-        placeholder="Reason"
+        placeholder={t("membersReasonPlaceholder")}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         className="h-8 flex-1 text-xs"
         required
       />
       <Button type="submit" size="sm" disabled={submitting}>
-        {submitting ? "..." : "Submit for approval"}
+        {submitting ? "..." : t("membersSubmitForApprovalAction")}
       </Button>
       <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onCancel}>
-        Cancel
+        {t("membersCancelAction")}
       </Button>
     </form>
   );

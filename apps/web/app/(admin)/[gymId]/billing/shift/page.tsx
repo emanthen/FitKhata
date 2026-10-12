@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { closeCashShift, openCashShift, type CashShift } from "@fitkhata/api-client";
 import { CircleCheck, TriangleAlert, Wallet } from "lucide-react";
 
@@ -13,6 +14,7 @@ import { formatNpr } from "@/lib/money";
 const DENOMINATIONS = ["1000", "500", "100", "50", "20", "10", "5"] as const;
 
 export default function CashShiftPage() {
+  const t = useTranslations("admin");
   const [shift, setShift] = useState<CashShift | null>(null);
   const [openingFloat, setOpeningFloat] = useState("");
   const [counts, setCounts] = useState<Record<string, string>>({});
@@ -33,7 +35,7 @@ export default function CashShiftPage() {
       const result = await openCashShift(openingFloat);
       setShift(result);
     } catch {
-      setError("Couldn't open a shift.");
+      setError(t("billingShiftOpenError"));
     } finally {
       setSubmitting(false);
     }
@@ -55,7 +57,7 @@ export default function CashShiftPage() {
       setClosed(result);
       setShift(null);
     } catch {
-      setError("Couldn't close this shift.");
+      setError(t("billingShiftCloseError"));
     } finally {
       setSubmitting(false);
     }
@@ -66,12 +68,14 @@ export default function CashShiftPage() {
     const flagged = Math.abs(variance) > 100;
     return (
       <div className="max-w-md space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight">Shift closed</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("billingShiftClosedTitle")}</h1>
         <Card>
           <CardContent className="space-y-2">
             <p className="font-dashboard-mono text-sm">
-              Expected {formatNpr(closed.expected_cash_npr, { symbol: true })}, counted{" "}
-              {formatNpr(closed.counted_cash_npr ?? "0", { symbol: true })}.
+              {t("billingShiftExpectedCounted", {
+                expected: formatNpr(closed.expected_cash_npr, { symbol: true }),
+                counted: formatNpr(closed.counted_cash_npr ?? "0", { symbol: true }),
+              })}
             </p>
             <p
               className={`font-dashboard-mono flex items-center gap-1.5 text-sm font-medium ${
@@ -83,12 +87,16 @@ export default function CashShiftPage() {
               ) : (
                 <CircleCheck size={14} strokeWidth={2} />
               )}
-              Variance: {formatNpr(closed.variance_npr ?? "0", { symbol: true })}
-              {flagged && <span className="font-sans font-normal"> - the owner has been notified.</span>}
+              {t("billingShiftVarianceLabel", {
+                variance: formatNpr(closed.variance_npr ?? "0", { symbol: true }),
+              })}
+              {flagged && (
+                <span className="font-sans font-normal"> {t("billingShiftOwnerNotified")}</span>
+              )}
             </p>
           </CardContent>
         </Card>
-        <Button onClick={() => setClosed(null)}>Open a new shift</Button>
+        <Button onClick={() => setClosed(null)}>{t("billingShiftOpenNewButton")}</Button>
       </div>
     );
   }
@@ -98,7 +106,7 @@ export default function CashShiftPage() {
       <div className="max-w-sm space-y-4">
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <Wallet size={18} strokeWidth={2} className="text-primary" />
-          Open a cash shift
+          {t("billingShiftOpenTitle")}
         </h1>
         {error && (
           <p className="flex items-center gap-1.5 text-sm text-destructive">
@@ -108,7 +116,7 @@ export default function CashShiftPage() {
         )}
         <form onSubmit={open} className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="opening-float">Opening float (NPR)</Label>
+            <Label htmlFor="opening-float">{t("billingShiftOpeningFloatLabel")}</Label>
             <Input
               id="opening-float"
               type="number"
@@ -119,7 +127,7 @@ export default function CashShiftPage() {
             />
           </div>
           <Button type="submit" disabled={submitting}>
-            {submitting ? "..." : "Open shift"}
+            {submitting ? "..." : t("billingShiftOpenButton")}
           </Button>
         </form>
       </div>
@@ -129,9 +137,11 @@ export default function CashShiftPage() {
   return (
     <div className="max-w-sm space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Close cash shift</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("billingShiftCloseTitle")}</h1>
         <p className="font-dashboard-mono mt-0.5 text-sm text-muted-foreground">
-          Opened with {formatNpr(shift.opening_float_npr, { symbol: true })}.
+          {t("billingShiftOpenedWith", {
+            amount: formatNpr(shift.opening_float_npr, { symbol: true }),
+          })}
         </p>
       </div>
       {error && (
@@ -145,7 +155,7 @@ export default function CashShiftPage() {
         <CardContent>
           <form onSubmit={close} className="space-y-3">
             <div className="space-y-2">
-              <Label>Count the drawer</Label>
+              <Label>{t("billingShiftCountDrawerLabel")}</Label>
               {DENOMINATIONS.map((denom) => (
                 <div key={denom} className="flex items-center gap-2">
                   <span className="font-dashboard-mono w-16 text-sm text-muted-foreground">
@@ -163,10 +173,12 @@ export default function CashShiftPage() {
               ))}
             </div>
             <p className="font-dashboard-mono border-t pt-3 text-sm font-medium">
-              Counted total: {formatNpr(countedTotal.toFixed(2), { symbol: true })}
+              {t("billingShiftCountedTotal", {
+                total: formatNpr(countedTotal.toFixed(2), { symbol: true }),
+              })}
             </p>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "..." : "Close shift"}
+              {submitting ? "..." : t("billingShiftCloseButton")}
             </Button>
           </form>
         </CardContent>

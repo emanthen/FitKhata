@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createShiftChecklist,
@@ -27,6 +28,7 @@ function today(): string {
 }
 
 function ChecklistRunner({ checklist }: { checklist: ShiftChecklist }) {
+  const t = useTranslations("admin");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);
 
@@ -66,7 +68,7 @@ function ChecklistRunner({ checklist }: { checklist: ShiftChecklist }) {
         </ul>
         <Button size="sm" onClick={submit} disabled={submitted}>
           {submitted && <CircleCheck size={13} strokeWidth={2} data-icon="inline-start" />}
-          {submitted ? "Submitted for today" : "Submit"}
+          {submitted ? t("staffChecklistSubmitted") : t("staffChecklistSubmit")}
         </Button>
       </CardContent>
     </Card>
@@ -74,6 +76,7 @@ function ChecklistRunner({ checklist }: { checklist: ShiftChecklist }) {
 }
 
 export default function ChecklistsPage() {
+  const t = useTranslations("admin");
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [itemsText, setItemsText] = useState("");
@@ -97,7 +100,7 @@ export default function ChecklistsPage() {
     <div className="max-w-2xl space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <IdCard size={18} strokeWidth={2} className="text-primary" />
-        Staff
+        {t("staffPageTitle")}
       </h1>
       <StaffTabs />
 
@@ -106,7 +109,7 @@ export default function ChecklistsPage() {
           <ChecklistRunner key={c.id} checklist={c} />
         ))}
         {checklists.length === 0 && (
-          <p className="text-sm text-muted-foreground">No checklist templates yet - add one below.</p>
+          <p className="text-sm text-muted-foreground">{t("staffChecklistEmpty")}</p>
         )}
       </div>
 
@@ -115,13 +118,13 @@ export default function ChecklistsPage() {
           <form onSubmit={createChecklist} className="space-y-3">
             <h2 className="flex items-center gap-1.5 text-sm font-medium">
               <ListChecks size={15} strokeWidth={2} className="text-primary" />
-              New checklist template
+              {t("staffChecklistNewTemplate")}
             </h2>
             <div className="space-y-1.5">
-              <Label htmlFor="checklist-name">Name</Label>
+              <Label htmlFor="checklist-name">{t("staffChecklistNameLabel")}</Label>
               <Input
                 id="checklist-name"
-                placeholder="Opening"
+                placeholder={t("staffChecklistNamePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="h-8"
@@ -129,7 +132,7 @@ export default function ChecklistsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="checklist-items">Items (one per line)</Label>
+              <Label htmlFor="checklist-items">{t("staffChecklistItemsLabel")}</Label>
               <textarea
                 id="checklist-items"
                 value={itemsText}
@@ -140,7 +143,7 @@ export default function ChecklistsPage() {
               />
             </div>
             <Button type="submit" size="sm">
-              Create
+              {t("staffChecklistCreate")}
             </Button>
           </form>
         </CardContent>

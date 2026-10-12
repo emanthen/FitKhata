@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { listAllTickets } from "@fitkhata/api-client";
 import { LifeBuoy } from "lucide-react";
@@ -22,22 +23,23 @@ const PRIORITY_VARIANT: Record<string, "default" | "secondary" | "destructive" |
 };
 
 export default function TicketInboxPage() {
+  const t = useTranslations("admin");
   const query = useQuery({ queryKey: ["platform", "tickets"], queryFn: listAllTickets });
 
   return (
     <div className="space-y-6">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <LifeBuoy size={18} strokeWidth={2} className="text-primary" />
-        Ticket inbox
+        {t("platformTicketsTitle")}
       </h1>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Organization</TableHead>
-            <TableHead>Subject</TableHead>
-            <TableHead>Priority</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Updated</TableHead>
+            <TableHead>{t("platformTicketsColOrg")}</TableHead>
+            <TableHead>{t("platformTicketsColSubject")}</TableHead>
+            <TableHead>{t("platformTicketsColPriority")}</TableHead>
+            <TableHead>{t("platformTicketsColStatus")}</TableHead>
+            <TableHead>{t("platformTicketsColUpdated")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -65,7 +67,7 @@ export default function TicketInboxPage() {
           {!query.isLoading && (query.data ?? []).length === 0 && (
             <TableRow>
               <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
-                No tickets.
+                {t("platformTicketsEmpty")}
               </TableCell>
             </TableRow>
           )}

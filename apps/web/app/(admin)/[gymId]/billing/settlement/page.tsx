@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { getSettlementReport } from "@fitkhata/api-client";
 import { Receipt } from "lucide-react";
@@ -15,17 +16,17 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const MODE_LABELS: Record<string, string> = {
-  cash: "Cash",
-  manual_esewa: "Manual eSewa",
-  bank: "Bank transfer",
-  cheque: "Cheque",
-  esewa: "eSewa",
-  khalti: "Khalti",
-  fonepay: "Fonepay",
-};
-
 export default function SettlementReportPage() {
+  const t = useTranslations("admin");
+  const MODE_LABELS: Record<string, string> = {
+    cash: t("billingModeCash"),
+    manual_esewa: t("billingModeManualEsewa"),
+    bank: t("billingModeBank"),
+    cheque: t("billingModeCheque"),
+    esewa: t("billingModeEsewa"),
+    khalti: t("billingModeKhalti"),
+    fonepay: t("billingModeFonepay"),
+  };
   const [date, setDate] = useState(today());
   const report = useQuery({
     queryKey: ["settlement-report", date],
@@ -36,11 +37,11 @@ export default function SettlementReportPage() {
     <div className="max-w-md space-y-4">
       <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
         <Receipt size={18} strokeWidth={2} className="text-primary" />
-        Daily settlement
+        {t("billingSettlementTitle")}
       </h1>
 
       <div className="space-y-1.5">
-        <Label htmlFor="report-date">Date</Label>
+        <Label htmlFor="report-date">{t("billingSettlementDateLabel")}</Label>
         <Input
           id="report-date"
           type="date"
@@ -71,12 +72,12 @@ export default function SettlementReportPage() {
                 ))}
                 {Object.keys(report.data.by_mode).length === 0 && (
                   <li className="py-2 text-sm text-muted-foreground">
-                    No payments collected on this date.
+                    {t("billingSettlementEmpty")}
                   </li>
                 )}
               </ul>
               <div className="flex items-center justify-between border-t pt-3 text-base font-semibold">
-                <span>Total</span>
+                <span>{t("billingSettlementTotal")}</span>
                 <span className="font-dashboard-mono">
                   {formatNpr(report.data.total_npr, { symbol: true })}
                 </span>
