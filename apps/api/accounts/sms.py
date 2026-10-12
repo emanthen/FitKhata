@@ -4,12 +4,29 @@ Selected via the SMS_PROVIDER setting (env-driven)."""
 from __future__ import annotations
 
 import logging
+import re
 from abc import ABC, abstractmethod
 
 import requests
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 logger = logging.getLogger(__name__)
+
+REAL_PROVIDERS = {"sparrow", "aakash"}
+
+
+def validate_sms_provider(value: str) -> None:
+    """config/settings/prod.py calls this once at import time — a plain
+    function rather than inline settings-module code so it's unit-testable
+    without reimporting Django settings. "console" (the dev default)
+    silently logs OTP codes; prod must never fall back to it silently.
+    """
+    if value not in REAL_PROVIDERS:
+        raise ImproperlyConfigured(
+            f"SMS_PROVIDER must be one of {sorted(REAL_PROVIDERS)} in production, "
+            f"got {value!r} — the 'console' default logs OTP codes."
+        )
 
 
 class SmsProvider(ABC):
@@ -17,12 +34,24 @@ class SmsProvider(ABC):
     def send(self, phone: str, message: str) -> None: ...
 
 
+def _mask_digits(value: str) -> str:
+    return re.sub(r"\d{3,}", lambda m: "*" * len(m.group()), value)
+
+
 class ConsoleSmsProvider(SmsProvider):
     """Dev default: logs instead of sending, so OTP codes are visible in
-    `docker compose logs api` without needing a real SMS account."""
+    `docker compose logs api` without needing a real SMS account. Masks
+    digit runs (OTP codes, phone numbers) unless DEBUG — prod.py's
+    validate_sms_provider() call means this should never actually run in
+    prod, but a misconfigured staging env with DEBUG off is exactly the
+    case this exists to not leak codes into logs for.
+    """
 
     def send(self, phone: str, message: str) -> None:
-        logger.info("SMS to %s: %s", phone, message)
+        if settings.DEBUG:
+            logger.info("SMS to %s: %s", phone, message)
+        else:
+            logger.info("SMS to %s: %s", _mask_digits(phone), _mask_digits(message))
 
 
 class SparrowSmsProvider(SmsProvider):

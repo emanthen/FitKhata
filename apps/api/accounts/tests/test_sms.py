@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+import logging
 from unittest.mock import Mock, patch
 
-from accounts.sms import AakashSmsProvider, ConsoleSmsProvider, SparrowSmsProvider, get_sms_provider
+import pytest
+from django.core.exceptions import ImproperlyConfigured
+
+from accounts.sms import (
+    AakashSmsProvider,
+    ConsoleSmsProvider,
+    SparrowSmsProvider,
+    get_sms_provider,
+    validate_sms_provider,
+)
 
 
 def test_get_sms_provider_defaults_to_console(settings):
@@ -36,3 +46,32 @@ def test_aakash_sends_a_local_number_without_the_977_prefix():
         data={"auth_token": "test-token", "to": "9800000001", "text": "Hello"},
         timeout=10,
     )
+
+
+@pytest.mark.parametrize("value", ["console", "", "twilio", "SPARROW"])
+def test_validate_sms_provider_rejects_non_real_providers(value):
+    with pytest.raises(ImproperlyConfigured):
+        validate_sms_provider(value)
+
+
+@pytest.mark.parametrize("value", ["sparrow", "aakash"])
+def test_validate_sms_provider_accepts_real_providers(value):
+    validate_sms_provider(value)  # must not raise
+
+
+def test_console_provider_masks_digits_when_debug_is_false(settings, caplog):
+    settings.DEBUG = False
+    with caplog.at_level(logging.INFO):
+        ConsoleSmsProvider().send("+9779800000001", "Your FitKhata OTP is 482913.")
+
+    assert "482913" not in caplog.text
+    assert "9800000001" not in caplog.text
+    assert "******" in caplog.text
+
+
+def test_console_provider_logs_full_message_when_debug_is_true(settings, caplog):
+    settings.DEBUG = True
+    with caplog.at_level(logging.INFO):
+        ConsoleSmsProvider().send("+9779800000001", "Your FitKhata OTP is 482913.")
+
+    assert "482913" in caplog.text

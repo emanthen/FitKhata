@@ -1,8 +1,15 @@
+from accounts.sms import validate_sms_provider
+
 from .base import *  # noqa: F403
-from .base import env  # noqa: F401
+from .base import SMS_PROVIDER, env  # noqa: F401
 
 DEBUG = False
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
+
+# base.py's SMS_PROVIDER defaults to "console", which logs OTP codes —
+# a missing env var here must crash startup, the same reasoning as
+# SECRET_KEY below, not silently fall back to logging every login code.
+validate_sms_provider(SMS_PROVIDER)
 
 # base.py's SECRET_KEY has a hardcoded dev-only fallback ("insecure-dev-key-
 # change-me") so local dev never needs a .env to boot -- that fallback is
