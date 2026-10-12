@@ -8,6 +8,9 @@
     "build": "pnpm -r build"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["sharp", "better-sqlite3", "keytar", "@serialport/bindings-cpp"]
+    "onlyBuiltDependencies": ["sharp", "better-sqlite3", "keytar", "@serialport/bindings-cpp"],
+    "overrides": {
+      "tinypool": "^2.1.2"
+    }
   }
 }

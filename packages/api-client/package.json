@@ -12,7 +12,7 @@
     "axios": "^1.7.0"
   },
   "devDependencies": {
-    "orval": "^7.3.0",
+    "orval": "^8.21.0",
     "typescript": "^5.7.0",
     "@types/node": "^22.10.0"
   }
