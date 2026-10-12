@@ -29,58 +29,49 @@ export function MarketingProductPreview() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-24">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+        <h2 className="font-marketing-display text-4xl font-bold tracking-tight md:text-5xl">
           {t("productPreviewHeading")}
         </h2>
         <p className="mt-3 text-muted-foreground">{t("productPreviewBody")}</p>
       </div>
 
-      <motion.div
-        initial={reduce ? false : { opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="font-dashboard mx-auto mt-10 max-w-4xl overflow-hidden rounded-2xl border bg-card shadow-xl"
-      >
-        <div className="flex items-center gap-1.5 border-b bg-muted/40 px-4 py-2.5">
-          <span className="size-2.5 rounded-full bg-destructive/40" />
-          <span className="size-2.5 rounded-full bg-accent/40" />
-          <span className="size-2.5 rounded-full bg-primary/40" />
-          <span className="ml-3 rounded-md bg-background px-2.5 py-0.5 text-xs text-muted-foreground">
-            app.fitkhata.com/demo-gym
-          </span>
-          <Badge variant="outline" className="ml-auto text-[10px] text-muted-foreground">
-            {t("productPreviewTag")}
-          </Badge>
-        </div>
+      <div className="relative mx-auto mt-12 max-w-4xl">
+        <Badge className="absolute -top-3 left-6 z-10 text-[10px]">{t("productPreviewTag")}</Badge>
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="font-dashboard overflow-hidden rounded-2xl bg-card shadow-2xl shadow-primary/10"
+        >
+          <div className="grid grid-cols-2 gap-3 p-4 pt-6 sm:grid-cols-4">
+            <StatTile label="Active members" icon={<Users size={16} strokeWidth={2} />} value="247" />
+            <StatTile
+              label="Revenue this month"
+              icon={<Banknote size={16} strokeWidth={2} />}
+              value="Rs 4,12,990"
+            />
+            <StatTile label="Renewals due (7d)" icon={<CalendarClock size={16} strokeWidth={2} />} value="18" />
+            <StatTile label="Growth" icon={<TrendingUp size={16} strokeWidth={2} />} value="+12%" />
+          </div>
 
-        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-          <StatTile label="Active members" icon={<Users size={16} strokeWidth={2} />} value="247" />
-          <StatTile
-            label="Revenue this month"
-            icon={<Banknote size={16} strokeWidth={2} />}
-            value="Rs 4,12,990"
-          />
-          <StatTile label="Renewals due (7d)" icon={<CalendarClock size={16} strokeWidth={2} />} value="18" />
-          <StatTile label="Growth" icon={<TrendingUp size={16} strokeWidth={2} />} value="+12%" />
-        </div>
-
-        <div className="border-t px-4 pb-4">
-          <Table>
-            <TableBody>
-              {EXAMPLE_MEMBERS.map((m) => (
-                <TableRow key={m.name}>
-                  <TableCell className="font-medium">{m.name}</TableCell>
-                  <TableCell className="font-dashboard-mono text-muted-foreground">{m.plan}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={STATUS_VARIANT[m.status]}>{m.status}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </motion.div>
+          <div className="border-t px-4 pb-4">
+            <Table>
+              <TableBody>
+                {EXAMPLE_MEMBERS.map((m) => (
+                  <TableRow key={m.name}>
+                    <TableCell className="font-medium">{m.name}</TableCell>
+                    <TableCell className="font-dashboard-mono text-muted-foreground">{m.plan}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={STATUS_VARIANT[m.status]}>{m.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </motion.div>
+      </div>
     </section>
   );
 }

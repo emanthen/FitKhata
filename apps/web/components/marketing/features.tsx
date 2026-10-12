@@ -22,7 +22,7 @@ export function MarketingFeatures() {
 
   return (
     <section id="features" className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-24">
-      <h2 className="max-w-[24ch] text-3xl font-bold tracking-tight md:text-4xl">
+      <h2 className="font-marketing-display max-w-[24ch] text-4xl font-bold tracking-tight md:text-5xl">
         {t("featuresHeading")}
       </h2>
 
@@ -60,11 +60,13 @@ export function MarketingFeatures() {
                 </>
               )}
               <div className={`relative ${isDark ? "text-white" : "text-foreground"}`}>
-                <Icon
-                  size={22}
-                  strokeWidth={2}
-                  className={isDark ? "text-white" : "text-primary"}
-                />
+                <span
+                  className={`flex size-9 items-center justify-center rounded-full ${
+                    isDark ? "bg-white/15" : "bg-primary/10"
+                  }`}
+                >
+                  <Icon size={18} strokeWidth={2} className={isDark ? "text-white" : "text-primary"} />
+                </span>
                 <h3 className="mt-4 text-lg font-semibold">{t(item.titleKey)}</h3>
                 <p
                   className={`mt-1.5 max-w-[38ch] text-sm leading-relaxed ${

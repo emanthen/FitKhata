@@ -17,7 +17,7 @@ export function MarketingFaq() {
 
   return (
     <section className="mx-auto max-w-3xl px-4 py-16 md:px-6 md:py-24">
-      <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">
+      <h2 className="font-marketing-display text-center text-4xl font-bold tracking-tight md:text-5xl">
         {t("faqHeading")}
       </h2>
 

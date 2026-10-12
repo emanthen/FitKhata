@@ -13,15 +13,23 @@ export function MarketingCtaBand() {
 
   return (
     <section className="relative overflow-hidden bg-primary">
-      <div
+      {/* Scan-frame corners echo the logo mark instead of a generic dot grid. */}
+      <svg
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.15]"
-        style={{
-          backgroundImage: "radial-gradient(currentColor 1.5px, transparent 1.5px)",
-          backgroundSize: "20px 20px",
-          color: "var(--primary-foreground)",
-        }}
-      />
+        className="pointer-events-none absolute left-6 top-6 size-10 text-primary-foreground/25"
+        viewBox="0 0 10 10"
+        fill="none"
+      >
+        <path d="M2 8V2H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute bottom-6 right-6 size-10 rotate-180 text-primary-foreground/25"
+        viewBox="0 0 10 10"
+        fill="none"
+      >
+        <path d="M2 8V2H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
 
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 20 }}
@@ -31,7 +39,7 @@ export function MarketingCtaBand() {
         className="relative mx-auto flex max-w-7xl flex-col items-start gap-6 px-4 py-16 md:flex-row md:items-center md:justify-between md:px-6 md:py-20"
       >
         <div>
-          <h2 className="max-w-[20ch] text-3xl font-bold tracking-tight text-primary-foreground md:text-4xl">
+          <h2 className="font-marketing-display max-w-[20ch] text-4xl font-bold tracking-tight text-primary-foreground md:text-5xl">
             {t("ctaHeading")}
           </h2>
           <p className="mt-2 text-primary-foreground/85">{t("ctaBody")}</p>

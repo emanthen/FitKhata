@@ -46,7 +46,9 @@ export function MarketingPricing() {
   return (
     <section id="pricing" className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-24">
       <div className="flex flex-col items-start gap-2 md:flex-row md:items-end md:justify-between">
-        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">{t("pricingHeading")}</h2>
+        <h2 className="font-marketing-display text-4xl font-bold tracking-tight md:text-5xl">
+          {t("pricingHeading")}
+        </h2>
         <p className="text-sm text-muted-foreground">{t("pricingNote")}</p>
       </div>
 
@@ -59,7 +61,9 @@ export function MarketingPricing() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.45, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
             className={`flex flex-col rounded-2xl border p-7 ${
-              plan.highlight ? "border-primary shadow-lg shadow-primary/10" : "border-border"
+              plan.highlight
+                ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
+                : "border-border"
             }`}
           >
             <div className="flex items-center justify-between">
@@ -68,7 +72,7 @@ export function MarketingPricing() {
             </div>
 
             <div className="mt-4 flex items-baseline gap-1">
-              <span className="text-3xl font-bold tracking-tight">
+              <span className="font-marketing-display text-4xl font-bold tracking-tight">
                 Rs {formatNpr(plan.monthlyNpr)}
               </span>
               <span className="text-sm text-muted-foreground">{t("pricingPerMonth")}</span>

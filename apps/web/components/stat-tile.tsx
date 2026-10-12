@@ -14,7 +14,7 @@ export function StatTile({
   loading?: boolean;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-xl bg-card p-4 shadow-sm">
       <div className="flex items-center gap-2 text-muted-foreground">
         {icon}
         <p className="text-xs font-medium">{label}</p>
