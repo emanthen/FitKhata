@@ -5,6 +5,8 @@ on:
     branches: [main]
     tags: ["v*"]
 
+permissions: read-all
+
 jobs:
   deploy-staging:
     if: github.ref == 'refs/heads/main'
@@ -13,10 +15,10 @@ jobs:
     env:
       IMAGE_TAG: main-${{ github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Sync infra/ to staging
-        uses: burnett01/rsync-deployments@7.0.1
+        uses: burnett01/rsync-deployments@796cf0d5e4b535745ce49d7429f77cf39e25ef39 # 7.0.1
         with:
           switches: -avzr --delete
           path: infra/
@@ -27,7 +29,7 @@ jobs:
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Pull, migrate, deploy
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
@@ -66,10 +68,10 @@ jobs:
     env:
       IMAGE_TAG: ${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Sync infra/ to production
-        uses: burnett01/rsync-deployments@7.0.1
+        uses: burnett01/rsync-deployments@796cf0d5e4b535745ce49d7429f77cf39e25ef39 # 7.0.1
         with:
           switches: -avzr --delete
           path: infra/
@@ -80,7 +82,7 @@ jobs:
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Pull, migrate, deploy
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
