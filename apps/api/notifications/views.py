@@ -260,7 +260,16 @@ class WhatsAppWebhookView(APIView):
 
     def get(self, request):
         if request.query_params.get("hub.verify_token") == settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN:
-            return HttpResponse(request.query_params.get("hub.challenge", ""))
+            # text/plain, not Django's HttpResponse default of text/html: this
+            # echoes back a client-supplied query param verbatim per Meta's
+            # handshake protocol -- an explicit non-HTML content-type is what
+            # actually stops a browser from ever executing it as a script,
+            # not the verify-token gate above. semgrep's reflected-data-
+            # httpresponse rule can't model that a non-HTML content_type
+            # closes the XSS vector regardless of payload -- suppressed with
+            # that reasoning on record, not blindly.
+            challenge = request.query_params.get("hub.challenge", "")  # nosemgrep
+            return HttpResponse(challenge, content_type="text/plain")
         return Response(status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request):

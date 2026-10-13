@@ -1,0 +1,16 @@
+title = "FitKhata gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "shared/qr_vectors.json: deterministic cross-language test vectors (CLAUDE.md rule 12) — secret_hex is fixture data the Python and TypeScript test suites both load to prove the QR HMAC algorithm produces the same token, never a real device/member secret."
+paths = ['''shared/qr_vectors\.json''']
+
+[[allowlists]]
+description = "apps/api/config/settings/test.py: a fixed, publicly-committed Fernet key used ONLY under DJANGO_SETTINGS_MODULE=config.settings.test — prod.py has no default and crashes on startup without a real FIELD_ENCRYPTION_KEY from env (same no-default pattern as SECRET_KEY there), so this one carries no secrecy requirement at all."
+paths = ['''apps/api/config/settings/test\.py''']
+
+[[allowlists]]
+description = "apps/api/accounts/tests/test_views.py: a throwaway password for a test-only User fixture, never a real account."
+paths = ['''apps/api/accounts/tests/test_views\.py''']

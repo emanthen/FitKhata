@@ -547,7 +547,11 @@ class FacebookLeadWebhookView(APIView):
             request.query_params.get("hub.verify_token")
             == settings.FACEBOOK_LEAD_WEBHOOK_VERIFY_TOKEN
         ):
-            return HttpResponse(request.query_params.get("hub.challenge", ""))
+            # text/plain, not Django's HttpResponse default of text/html —
+            # see notifications/views.py's WhatsAppWebhookView.get for why,
+            # including why the semgrep suppression below is justified.
+            challenge = request.query_params.get("hub.challenge", "")  # nosemgrep
+            return HttpResponse(challenge, content_type="text/plain")
         return Response(status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request):
