@@ -29,6 +29,7 @@ from coaching.models import (
     WorkoutLog,
 )
 from core.services import audit
+from core.validators import strip_exif, validate_image_file
 from notifications.services import notify
 
 # Assumed baseline for attendance_pct/low_attendance when no per-member
@@ -105,11 +106,12 @@ def record_measurement(
             },
         )
         for uploaded_file, angle in photos or []:
+            validate_image_file(uploaded_file)
             BodyMeasurementPhoto.objects.create(
                 org=member.org,
                 gym=member.gym,
                 measurement=measurement,
-                image=uploaded_file,
+                image=strip_exif(uploaded_file),
                 angle=angle,
             )
     audit(measurement, "update", after={"weight_kg": str(weight_kg)}, actor=actor)

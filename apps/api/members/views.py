@@ -4,6 +4,7 @@ from datetime import date
 
 from django.contrib.postgres.search import TrigramSimilarity
 from django.core import signing
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.files.storage import default_storage
 from django.db.models import Q
 from django.db.models.functions import Greatest
@@ -18,6 +19,7 @@ from rest_framework.views import APIView
 from accounts.permissions import IsFrontDeskOrAbove, IsManagerOrAbove
 from attendance.views import MEMBER_PASS_MAX_AGE, MEMBER_PASS_SALT
 from core.context import system_context
+from core.validators import validate_import_file_size
 from core.viewsets import TenantQuerysetMixin, TenantViewSet
 from gyms.models import Gym
 from members.models import AddOn, ImportJob, Member, Membership, Plan, PromoCode, Waiver
@@ -283,6 +285,10 @@ class ImportMembersView(APIView):
         upload = request.FILES.get("file")
         if upload is None:
             return Response({"detail": "A file upload is required."}, status=400)
+        try:
+            validate_import_file_size(upload)
+        except DjangoValidationError as exc:
+            return Response({"detail": str(exc.message)}, status=400)
 
         job = ImportJob.objects.create(
             org=request.gym.org, gym=request.gym, total_rows=0, uploaded_by=request.user

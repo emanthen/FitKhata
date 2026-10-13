@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from core.validators import strip_exif, validate_image_file, validate_pdf_file
 from members.models import (
     AddOn,
     ImportJob,
@@ -47,6 +48,12 @@ class MemberSerializer(serializers.ModelSerializer):
             "last_check_in_at",
             "created_at",
         ]
+
+    def validate_photo(self, value):
+        if value is None:
+            return value
+        validate_image_file(value)
+        return strip_exif(value)
 
 
 class PlanSerializer(serializers.ModelSerializer):
@@ -123,6 +130,10 @@ class WaiverSerializer(serializers.ModelSerializer):
         model = Waiver
         fields = ["id", "member", "signed_pdf", "signed_at", "ip"]
         read_only_fields = ["id", "signed_at", "ip"]
+
+    def validate_signed_pdf(self, value):
+        validate_pdf_file(value)
+        return value
 
 
 class MemberFeedbackSerializer(serializers.ModelSerializer):
