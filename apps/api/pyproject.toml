@@ -38,7 +38,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "pytest>=8.3,<9",
+  "pytest>=9.0.3",
   "pytest-django>=4.9",
   "pytest-cov>=5.0",
   "factory-boy>=3.3",
@@ -46,6 +46,8 @@ dev = [
   "mypy>=1.13",
   "django-stubs[compatible-mypy]>=5.1",
   "djangorestframework-stubs>=3.15",
+  "bandit>=1.9.4",
+  "pip-audit>=2.10.1",
 ]
 
 [tool.ruff]
@@ -55,6 +57,12 @@ extend-exclude = ["*/migrations/*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.bandit]
+# Test fixtures routinely contain "dangerous-looking" literals (a fake
+# 0.0.0.0/private IP to assert a validator rejects it, a dummy secret) —
+# bandit's checks are for production code, not test data.
+exclude_dirs = ["tests", "*/tests"]
 
 [tool.mypy]
 python_version = "3.12"
