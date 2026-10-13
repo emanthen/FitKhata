@@ -12,6 +12,7 @@ from rest_framework import serializers
 from billing.models import Invoice
 from members.models import Member, Membership
 from publicapi.models import ApiKey, WebhookDelivery, WebhookSubscription
+from publicapi.url_safety import UnsafeWebhookUrl, assert_safe_webhook_url
 
 
 class PublicMemberSerializer(serializers.ModelSerializer):
@@ -51,6 +52,13 @@ class WebhookSubscriptionCreateSerializer(serializers.Serializer):
     url = serializers.URLField(max_length=500)
     events = serializers.MultipleChoiceField(choices=WebhookSubscription.Event.choices)
     secret = serializers.CharField(max_length=200)
+
+    def validate_url(self, value: str) -> str:
+        try:
+            assert_safe_webhook_url(value)
+        except UnsafeWebhookUrl as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+        return value
 
 
 class WebhookSubscriptionSerializer(serializers.ModelSerializer):

@@ -18,6 +18,17 @@ from publicapi.tasks import deliver_webhook, sign_payload
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _skip_ssrf_check_by_default(monkeypatch):
+    """Every test below exercises retry/signature/dispatch logic, not the
+    SSRF check itself (see test_url_safety.py and the two tests at the
+    bottom of this file for that) — a real DNS lookup for "example.com"
+    on every test run here would be an unnecessary live-network
+    dependency for behavior these tests aren't about.
+    """
+    monkeypatch.setattr("publicapi.tasks.assert_safe_webhook_url", lambda url: None)
+
+
 @pytest.fixture
 def org():
     with system_context():
@@ -175,6 +186,74 @@ def test_dispatch_webhook_event_only_fires_for_subscribed_events(subscription, o
 
     with system_context():
         assert WebhookDelivery.objects.filter(subscription=subscription).count() == 1
+
+
+# --- SSRF: re-checked at delivery time, not just subscription-create ------
+
+
+def test_create_serializer_rejects_an_unsafe_url(monkeypatch):
+    from publicapi.serializers import WebhookSubscriptionCreateSerializer
+    from publicapi.url_safety import UnsafeWebhookUrl
+
+    def _always_unsafe(url):
+        raise UnsafeWebhookUrl("resolves to a private address")
+
+    monkeypatch.setattr("publicapi.serializers.assert_safe_webhook_url", _always_unsafe)
+    serializer = WebhookSubscriptionCreateSerializer(
+        data={"url": "https://internal.example/hook", "events": ["member.created"], "secret": "x"}
+    )
+
+    assert serializer.is_valid() is False
+    assert "url" in serializer.errors
+
+
+def test_deliver_webhook_fails_closed_if_the_url_is_unsafe_at_delivery_time(subscription):
+    """The DNS-rebinding case: the URL passed its create-time check, but
+    the hostname now resolves somewhere unsafe by the time delivery
+    actually runs — must reject outright, no retry, and never call
+    requests.post at all.
+    """
+    from publicapi.url_safety import UnsafeWebhookUrl
+
+    delivery = _delivery_for(subscription)
+
+    with (
+        system_context(),
+        patch(
+            "publicapi.tasks.assert_safe_webhook_url",
+            side_effect=UnsafeWebhookUrl("resolves to 169.254.169.254"),
+        ),
+        patch("publicapi.tasks.requests.post") as mock_post,
+    ):
+        deliver_webhook(str(delivery.pk))
+
+    mock_post.assert_not_called()
+    with system_context():
+        delivery.refresh_from_db()
+    assert delivery.status == WebhookDelivery.Status.FAILED
+    assert "169.254.169.254" in delivery.response_body
+
+
+def test_deliver_webhook_does_not_follow_redirects(subscription):
+    """allow_redirects=False: a 3xx response must be treated as a plain
+    non-2xx (retried/failed on its own terms), never silently followed to
+    a target that was never checked by assert_safe_webhook_url.
+    """
+    delivery = _delivery_for(subscription)
+
+    with (
+        system_context(),
+        patch("publicapi.tasks.requests.post") as mock_post,
+        pytest.raises(Exception, match="status 302"),
+    ):
+        mock_post.return_value = Mock(status_code=302, text="redirecting")
+        deliver_webhook(str(delivery.pk))
+
+    assert mock_post.call_args.kwargs["allow_redirects"] is False
+    with system_context():
+        delivery.refresh_from_db()
+    assert delivery.status == WebhookDelivery.Status.PENDING
+    assert delivery.response_status == 302
 
 
 def test_dispatch_webhook_event_skips_inactive_subscriptions(subscription, org):
