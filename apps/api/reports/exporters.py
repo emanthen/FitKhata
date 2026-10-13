@@ -14,6 +14,8 @@ from django.template.loader import render_to_string
 from openpyxl import Workbook
 from weasyprint import HTML
 
+from core.domain.csv_safety import escape_formula_prefix
+
 VAT_REGISTER_LABELS: dict[str, dict[str, str]] = {
     "en": {
         "bill_date_bs": "Bill date (BS)",
@@ -85,7 +87,7 @@ def rows_to_csv(rows: list[dict[str, Any]], fieldnames: list[str]) -> bytes:
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=fieldnames)
     writer.writeheader()
-    writer.writerows(rows)
+    writer.writerows({k: escape_formula_prefix(v) for k, v in row.items()} for row in rows)
     return buf.getvalue().encode("utf-8")
 
 
@@ -96,7 +98,7 @@ def rows_to_xlsx(
     ws = wb.active
     ws.append([labels.get(f, f) for f in fieldnames])
     for row in rows:
-        ws.append([row.get(f) for f in fieldnames])
+        ws.append([escape_formula_prefix(row.get(f)) for f in fieldnames])
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()

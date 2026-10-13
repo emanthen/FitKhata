@@ -17,6 +17,7 @@ from django.db import IntegrityError
 
 from accounts.models import User
 from core.context import tenant_context
+from core.domain.csv_safety import escape_formula_prefix
 from gyms.models import Gym
 from members.models import ImportJob
 from members.services import register_member
@@ -105,7 +106,9 @@ def import_members_task(job_id: str, gym_id: str, file_path: str, actor_id: str)
             buffer = io.StringIO()
             writer = csv.DictWriter(buffer, fieldnames=["row", "phone", "error"])
             writer.writeheader()
-            writer.writerows(errors)
+            writer.writerows(
+                {k: escape_formula_prefix(v) for k, v in row.items()} for row in errors
+            )
             job.error_report.save(
                 "errors.csv", ContentFile(buffer.getvalue().encode()), save=False
             )
