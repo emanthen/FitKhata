@@ -132,6 +132,27 @@ def test_webhook_post_ignores_non_leadgen_changes():
     assert response.json() == {"created": 0}
 
 
+@override_settings(FACEBOOK_APP_SECRET=APP_SECRET, FACEBOOK_LEAD_WEBHOOK_VERIFY_TOKEN=VERIFY_TOKEN)
+def test_webhook_rate_limits_after_the_configured_threshold():
+    from django.core.cache import cache
+
+    client = APIClient()
+    cache.clear()
+    try:
+        statuses = []
+        for _ in range(70):  # rate is 60/m -- stop well past it or on first 429
+            response = client.get(
+                "/api/v1/webhooks/facebook-leads",
+                {"hub.mode": "subscribe", "hub.verify_token": "wrong", "hub.challenge": "x"},
+            )
+            statuses.append(response.status_code)
+            if response.status_code == 429:
+                break
+        assert 429 in statuses
+    finally:
+        cache.clear()
+
+
 def _client_for(user: User) -> APIClient:
     tokens = issue_tokens_for_user(user)
     client = APIClient()

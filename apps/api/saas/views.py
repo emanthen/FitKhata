@@ -23,6 +23,7 @@ from accounts.permissions import IsManagerOrAbove, IsOwner
 from billing.gateways.base import GatewayNotConfigured, GatewayVerificationFailed
 from billing.models import GatewayCredential
 from core.context import system_context
+from core.ratelimit import ip_rate_limited
 from gyms.models import Organization
 from notifications.providers import email as email_provider
 from notifications.providers import whatsapp as whatsapp_provider
@@ -523,6 +524,7 @@ def _verify_facebook_signature(request_body: bytes, signature_header: str | None
     return hmac.compare_digest(expected, signature_header.removeprefix("sha256="))
 
 
+@ip_rate_limited("60/m")
 class FacebookLeadWebhookView(APIView):
     """FR-12.6. GET is Meta's verify-token handshake (same mechanism as
     notifications.views.WhatsAppWebhookView); POST delivers one

@@ -9,8 +9,8 @@ import secrets
 from typing import Any
 
 from core.crypto import encrypt_bytes
-from core.services import audit
 from publicapi.models import ApiKey, WebhookSubscription
+from saas.services import log_platform_action
 
 KEY_PREFIX_LENGTH = 10
 
@@ -29,7 +29,9 @@ def create_api_key(org: Any, name: str, scopes: list[str], actor: Any = None) ->
         scopes=scopes,
         created_by=actor,
     )
-    audit(api_key, "create", after={"name": name, "scopes": scopes}, actor=actor)
+    log_platform_action(
+        org, "api_key_created", actor=actor, target=api_key, after={"name": name, "scopes": scopes}
+    )
     return api_key, raw_key
 
 
@@ -38,7 +40,13 @@ def revoke_api_key(api_key: ApiKey, actor: Any = None) -> None:
 
     api_key.revoked_at = timezone.now()
     api_key.save(update_fields=["revoked_at"])
-    audit(api_key, "update", after={"revoked_at": api_key.revoked_at.isoformat()}, actor=actor)
+    log_platform_action(
+        api_key.org,
+        "api_key_revoked",
+        actor=actor,
+        target=api_key,
+        after={"revoked_at": api_key.revoked_at.isoformat()},
+    )
 
 
 def touch_api_key_last_used(api_key: ApiKey) -> None:
@@ -57,7 +65,13 @@ def create_webhook_subscription(
         secret_encrypted=encrypt_bytes(secret.encode("utf-8")),
         created_by=actor,
     )
-    audit(subscription, "create", after={"url": url, "events": events}, actor=actor)
+    log_platform_action(
+        org,
+        "webhook_subscription_created",
+        actor=actor,
+        target=subscription,
+        after={"url": url, "events": events},
+    )
     return subscription
 
 

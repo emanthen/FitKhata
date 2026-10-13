@@ -44,6 +44,7 @@ from billing.services import (
     shift_expected_cash_npr,
 )
 from core.context import system_context
+from core.ratelimit import ip_rate_limited
 from core.services import audit
 from core.viewsets import TenantQuerysetMixin, TenantViewSet
 from members.models import AddOn, Member, Plan, PromoCode
@@ -568,12 +569,15 @@ class MemberRenewalInitiateView(APIView):
             )
 
 
+@ip_rate_limited("120/m")
 class MemberRenewalCallbackView(APIView):
     """Where the Member PWA asks "did it work?" — no token needed here, the
     payment_id + gateway's own signature/lookup verification is the
     authority (rule 6). eSewa/Khalti call this once, right after the
     browser redirects back; Fonepay has no redirect at all, so the PWA
     calls this repeatedly (polling) while the member is scanning the QR.
+    120/m comfortably covers that polling (a few-second interval) while
+    still bounding abuse against an AllowAny, payment_id-keyed endpoint.
     """
 
     permission_classes = [permissions.AllowAny]

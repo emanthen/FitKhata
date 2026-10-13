@@ -33,6 +33,7 @@ from attendance.services import (
 )
 from core.context import system_context
 from core.crypto import decrypt_bytes
+from core.ratelimit import ip_rate_limited
 from members.models import Member
 from staff.models import StaffProfile
 
@@ -205,6 +206,7 @@ class MemberPassLinkView(APIView):
         return Response({"token": token})
 
 
+@ip_rate_limited("60/m")
 class MemberPassView(APIView):
     """Member-side: redeems the link above. No auth — the signed token
     itself is the proof; it's handed out by staff and only ever sent to the

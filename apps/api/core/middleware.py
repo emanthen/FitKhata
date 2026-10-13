@@ -5,9 +5,34 @@ from collections.abc import Callable
 
 from django.db import connection, transaction
 from django.db.models import Q
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django_ratelimit.exceptions import Ratelimited
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
+
+class RatelimitMiddleware:
+    """@ratelimit(block=True) (core.ratelimit.ip_rate_limited,
+    publicapi.views.rate_limited — both applied as `name="dispatch"`
+    decorators) raises Ratelimited from the wrapped `dispatch` itself,
+    which is OUTSIDE DRF's own try/except (that lives inside the
+    original, now-wrapped, dispatch body) — so DRF's EXCEPTION_HANDLER
+    never sees it and it would otherwise propagate to a raw 500.
+    process_exception is Django's own hook for exactly this: any
+    middleware in MIDDLEWARE gets a chance at an unhandled exception
+    regardless of where in the stack it was raised.
+    """
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        return self.get_response(request)
+
+    def process_exception(self, request: HttpRequest, exception: Exception) -> HttpResponse | None:
+        if isinstance(exception, Ratelimited):
+            return JsonResponse({"detail": "Too many requests."}, status=429)
+        return None
 
 GYM_HEADER = "HTTP_X_GYM_ID"
 ROLE_RANK = {"owner": 3, "manager": 2, "front_desk": 1, "trainer": 0}

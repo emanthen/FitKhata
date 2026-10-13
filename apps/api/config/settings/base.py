@@ -53,6 +53,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Converts django_ratelimit's Ratelimited (raised by a dispatch-
+    # wrapping decorator, outside DRF's own exception handling) into a
+    # real 429 instead of a 500 — see core.middleware.RatelimitMiddleware.
+    "core.middleware.RatelimitMiddleware",
     # As high as possible (django-cors-headers' own recommendation) — must
     # run before CommonMiddleware, which can 301/404 a request (e.g. the
     # APPEND_SLASH redirect) before CORS headers would otherwise get added.

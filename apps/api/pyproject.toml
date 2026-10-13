@@ -68,7 +68,7 @@ django_settings_module = "config.settings.test"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["test_*.py"]
-testpaths = ["core", "accounts", "gyms", "members", "attendance", "billing", "retention", "notifications", "coaching", "staff", "reports", "saas", "tests"]
+testpaths = ["core", "accounts", "gyms", "members", "attendance", "billing", "retention", "notifications", "coaching", "staff", "reports", "saas", "publicapi", "tests"]
 markers = [
   "rls: Postgres row-level-security isolation tests (require a real DB)",
   "benchmark: timing-sensitive tests against seeded/bulk data (slower, real DB)",

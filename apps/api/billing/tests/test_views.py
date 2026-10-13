@@ -621,6 +621,31 @@ def test_member_renewal_callback_polls_fonepay_status_until_completed(owner_setu
     assert payment.status == Payment.Status.COMPLETED
 
 
+def test_renewal_callback_rate_limits_after_the_configured_threshold():
+    """AllowAny + client-controlled payment_id — the exact shape the
+    eSewa swap fix (fix/pilot-blockers) hardened at the application
+    layer; this is the request-volume backstop alongside it.
+    """
+    from django.core.cache import cache
+
+    client = APIClient()
+    cache.clear()
+    try:
+        statuses = []
+        for _ in range(130):  # rate is 120/m -- stop well past it or on first 429
+            response = client.post(
+                "/api/v1/billing/renewals/callback",
+                {"provider": "esewa", "payment_id": 0},
+                format="json",
+            )
+            statuses.append(response.status_code)
+            if response.status_code == 429:
+                break
+        assert 429 in statuses
+    finally:
+        cache.clear()
+
+
 def test_owner_can_read_org_settings(owner_setup):
     _org, gym, owner, _front_desk, _plan, _member = owner_setup
     client = _client_for(owner, gym)
