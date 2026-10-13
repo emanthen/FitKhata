@@ -10,7 +10,8 @@
   "pnpm": {
     "onlyBuiltDependencies": ["sharp", "better-sqlite3", "keytar", "@serialport/bindings-cpp"],
     "overrides": {
-      "tinypool": "^2.1.2"
+      "tinypool": "^2.1.2",
+      "postcss": "^8.5.18"
     }
   }
 }
